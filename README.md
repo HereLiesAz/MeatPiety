@@ -1,8 +1,11 @@
-# Save The Buffalo
+# Meat Piety
 
 A calculator for vegans and vegetarians: enter how many days you've lived
 that way and it tallies the animals a standard U.S. diet would otherwise
-have put through the meat, dairy, and egg industries.
+have put through the meat, dairy, and egg industries. It also projects that
+math onto your Facebook friends and the rest of the world's vegans and
+vegetarians — and it keeps a separate, backward line for buffalo, whose
+numbers survive on ranching demand rather than despite it.
 
 ## Stack
 
