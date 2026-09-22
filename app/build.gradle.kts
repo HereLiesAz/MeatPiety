@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hereliesaz.templateapp"
+    namespace = "com.hereliesaz.savethebuffalo"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.hereliesaz.templateapp"
+        applicationId = "com.hereliesaz.savethebuffalo"
         minSdk = 28
         targetSdk = 37
         versionCode = 1

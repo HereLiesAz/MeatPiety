@@ -1,6 +1,8 @@
-# Android App Template
+# Save The Buffalo
 
-Modern Android application starter for HereLiesAz repositories.
+A calculator for vegans and vegetarians: enter how many days you've lived
+that way and it tallies the animals a standard U.S. diet would otherwise
+have put through the meat, dairy, and egg industries.
 
 ## Stack
 
@@ -10,8 +12,6 @@ Modern Android application starter for HereLiesAz repositories.
 - compileSdk / targetSdk 37
 - minSdk 28
 - Java 17 toolchain expected
-
-Rename `com.hereliesaz.templateapp` and the visible app label when creating a project.
 
 ## Workflows
 

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TemplateApp"
+rootProject.name = "SaveTheBuffalo"
 include(":app")
