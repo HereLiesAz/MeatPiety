@@ -21,28 +21,35 @@ private data class AnimalRate(
     val existsBecauseOfDemand: Boolean = false,
 )
 
-// Annual per-capita figures for a standard U.S. omnivorous diet, rounded from
-// commonly cited slaughter and dairy/egg industry averages (Counting Animals, USDA).
+// Annual per-capita figures for a standard U.S. omnivorous diet. Land- and
+// sea-animal direct-consumption counts follow Harish Sethu's Counting Animals
+// analysis of USDA/FAO data (chickens, turkeys, pigs, cows, ducks, fish,
+// shellfish); egg-laying hens and dairy cows are derived from USDA/UEP
+// inventory versus U.S. population; buffalo from the National Bison
+// Association's 2023 U.S. harvest count versus U.S. population. Sheep and
+// lambs are derived from USDA per-capita lamb/mutton consumption. All are
+// best available real-world estimates, not lab-grade measurements.
 private val RATES = listOf(
-    AnimalRate("Chickens", 28.5, requiresVeganism = false),
-    AnimalRate("Fish", 15.0, requiresVeganism = false),
-    AnimalRate("Shellfish", 130.0, requiresVeganism = false),
-    AnimalRate("Turkeys", 0.66, requiresVeganism = false),
-    AnimalRate("Ducks", 0.35, requiresVeganism = false),
-    AnimalRate("Pigs", 0.35, requiresVeganism = false),
-    AnimalRate("Cows", 0.08, requiresVeganism = false),
-    AnimalRate("Sheep & Lambs", 0.03, requiresVeganism = false),
+    AnimalRate("Chickens", 23.2, requiresVeganism = false),
+    AnimalRate("Fish", 15.5, requiresVeganism = false),
+    AnimalRate("Shellfish", 131.1, requiresVeganism = false),
+    AnimalRate("Turkeys", 0.7, requiresVeganism = false),
+    AnimalRate("Ducks", 0.1, requiresVeganism = false),
+    AnimalRate("Pigs", 0.4, requiresVeganism = false),
+    AnimalRate("Cows", 0.1, requiresVeganism = false),
+    AnimalRate("Sheep & Lambs", 0.02, requiresVeganism = false),
     AnimalRate("Egg-Laying Hens", 0.9, requiresVeganism = true),
-    AnimalRate("Dairy Cows", 0.1, requiresVeganism = true),
+    AnimalRate("Dairy Cows", 0.028, requiresVeganism = true),
     // Bison survive today mostly as livestock; ranchers breed them because people eat
     // them. Less demand means fewer bred, not fewer killed, so this one runs backward.
-    AnimalRate("Buffalo", 0.0015, requiresVeganism = false, existsBecauseOfDemand = true),
+    AnimalRate("Buffalo", 0.000239, requiresVeganism = false, existsBecauseOfDemand = true),
 )
 
-// Rough, widely-cited orders of magnitude for world vegan/vegetarian populations.
-// Nobody is actually counting; these exist to make a point, not to survey the planet.
+// Global vegan/vegetarian population, order-of-magnitude estimates from Ipsos,
+// the Vegan Society, and aggregated national vegetarianism surveys (dominated
+// by India's ~500 million vegetarians). Nobody is actually counting precisely.
 private const val VEGANS_WORLDWIDE = 100_000_000L
-private const val VEGETARIANS_WORLDWIDE = 700_000_000L
+private const val VEGETARIANS_WORLDWIDE = 800_000_000L
 
 fun animalsSpared(days: Int, diet: Diet): List<SparedAnimal> {
     val years = days / 365.0

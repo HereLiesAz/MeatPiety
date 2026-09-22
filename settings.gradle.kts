@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "SaveTheBuffalo"
-include(":app")
+include(":app", ":shared")
