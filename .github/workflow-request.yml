@@ -44,15 +44,25 @@ requested:
   - ci-validation
   - codeql-scan
   - android-dependency-update
-  - android-github-release
+  - multi-platform-app-release
 
 # For a workflow that is not in the menu, describe the GENERAL capability needed.
 # Submit the implementation to HereLiesAz/workflows; do not implement it locally.
 new_workflow_request:
-  name: ""
-  purpose: ""
-  required_inputs: []
+  name: "static-site-pages-deploy"
+  purpose: >-
+    Build a repository's static web/PWA output (e.g. a Kotlin/Wasm, JS, or
+    plain static bundle) and publish it to GitHub Pages for that repository,
+    so the result is reachable at a live URL. Generic across any repository
+    that produces a static output directory; not specific to this repository
+    or to Compose Multiplatform.
+  required_inputs:
+    - target_repository
+    - build command (e.g. "gradle :shared:wasmJsBrowserDistribution")
+    - build output directory to publish (e.g. "shared/build/dist/wasmJs/productionExecutable")
+    - Java/Gradle/Node toolchain versions, if the build needs them
+    - target branch or GitHub Pages deployment method (e.g. gh-pages branch vs. Pages deployment API)
+    - custom domain, if any (CNAME), as optional profile data
   required_secrets:
-    # - name: EXAMPLE_SECRET
-    #   purpose: What service/API the credential authorizes and why the workflow needs it.
-    []
+    - name: GH_TOKEN
+      purpose: Already-cataloged GitHub API/release token; reused here to push the built site or call the Pages deployment API.
