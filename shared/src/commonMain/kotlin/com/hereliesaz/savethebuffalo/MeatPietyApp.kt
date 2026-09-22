@@ -64,6 +64,7 @@ private fun LedgerScreen() {
     val personal = remember(days, diet) { animalsSpared(days, diet) }
     val sphere = remember(personal, friends) { sphereOfInfluence(personal, friends) }
     val world = remember(days) { worldTally(days) }
+    val market = remember { marketEffects() }
 
     LazyColumn(
         modifier = Modifier
@@ -152,6 +153,26 @@ private fun LedgerScreen() {
                 fontStyle = FontStyle.Italic,
             )
         }
+
+        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
+        item {
+            SectionHeader(
+                title = "What happens to the price",
+                caption = "Today's abstainers are already a standing demand shock. Modeled from published " +
+                    "demand and supply elasticities, not observed — nobody's run this experiment at scale.",
+            )
+        }
+        items(market) { MarketRow(it) }
+
+        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
+        item {
+            SectionHeader(
+                title = "This has happened before",
+                caption = "Demand didn't just spare buffalo. It's the reason several species exist at all — " +
+                    "and the reason at least one doesn't.",
+            )
+        }
+        items(EXTINCTION_PRECEDENTS) { PrecedentRow(it) }
     }
 }
 
@@ -184,6 +205,62 @@ private fun LedgerRow(animal: SparedAnimal) {
             fontStyle = if (animal.existsBecauseOfDemand) FontStyle.Italic else FontStyle.Normal,
         )
     }
+}
+
+@Composable
+private fun MarketRow(effect: MarketEffect) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = effect.name, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "${formatPrice(effect.currentPrice)} → ${formatPrice(effect.newPrice)} ${effect.unit} " +
+                "(${formatPercent(effect.percentPriceChange)})",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        if (effect.belowBreakeven) {
+            Text(
+                text = "Below what it costs to keep breeding them — herds get thinned, not just margins.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PrecedentRow(precedent: ExtinctionPrecedent) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "${precedent.species} — ${precedent.year}",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = precedent.event,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = precedent.detail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun formatPercent(fraction: Double): String {
+    val tenths = kotlin.math.round(fraction * 1000).toLong()
+    val sign = if (tenths < 0) "-" else if (tenths > 0) "+" else ""
+    val magnitude = abs(tenths)
+    return "$sign${magnitude / 10}.${magnitude % 10}%"
+}
+
+private fun formatPrice(price: Double): String {
+    val cents = kotlin.math.round(price * 100).toLong()
+    val wholePart = cents / 100
+    val centPart = abs(cents % 100)
+    val centStr = if (centPart < 10) "0$centPart" else "$centPart"
+    return "$$wholePart.$centStr"
 }
 
 private fun format(count: Double): String {

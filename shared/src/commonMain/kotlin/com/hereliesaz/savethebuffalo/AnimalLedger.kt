@@ -48,8 +48,9 @@ private val RATES = listOf(
 // Global vegan/vegetarian population, order-of-magnitude estimates from Ipsos,
 // the Vegan Society, and aggregated national vegetarianism surveys (dominated
 // by India's ~500 million vegetarians). Nobody is actually counting precisely.
-private const val VEGANS_WORLDWIDE = 100_000_000L
-private const val VEGETARIANS_WORLDWIDE = 800_000_000L
+internal const val VEGANS_WORLDWIDE = 100_000_000L
+internal const val VEGETARIANS_WORLDWIDE = 800_000_000L
+internal const val WORLD_POPULATION = 8_100_000_000L
 
 fun animalsSpared(days: Int, diet: Diet): List<SparedAnimal> {
     val years = days / 365.0
