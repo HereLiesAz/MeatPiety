@@ -49,7 +49,7 @@ requested:
 
 # Profile data for android-release (docs/ANDROID_RELEASE.md in HereLiesAz/workflows).
 android_release_profile:
-  package_name: com.hereliesaz.savethebuffalo
+  package_name: com.hereliesaz.meatpiety
   build_command: ./gradlew :app:bundleRelease :app:assembleRelease --no-daemon --stacktrace
   aab_glob: app/build/outputs/bundle/release/*.aab
   apk_glob: app/build/outputs/apk/release/*.apk

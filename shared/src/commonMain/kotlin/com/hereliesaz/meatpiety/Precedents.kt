@@ -1,4 +1,4 @@
-package com.hereliesaz.savethebuffalo
+package com.hereliesaz.meatpiety
 
 data class ExtinctionPrecedent(
     val species: String,

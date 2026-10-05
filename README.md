@@ -19,17 +19,25 @@ Compose, built once and run on both Android and web.
 ## Stack
 
 - Android Gradle Plugin 9.4.1
-- Kotlin Multiplatform 2.4.20, Compose Multiplatform 1.9.0
+- Kotlin Multiplatform 2.4.20, Compose Multiplatform 1.12.1, Gradle 9.6.1
 - Jetpack Compose / Material 3
 - compileSdk / targetSdk 37
 - minSdk 28
-- Java 17 toolchain expected
+- JDK 21 (matches the release workflow)
 
 ## Running the web build
 
 ```
-gradle :shared:wasmJsBrowserDevelopmentRun
+./gradlew :shared:wasmJsBrowserDevelopmentRun
 ```
+
+## Tests
+
+~~~
+./gradlew :shared:testAndroidHostTest
+~~~
+
+Calculator logic lives in `shared/src/commonTest`.
 
 ## Workflows
 
@@ -41,3 +49,6 @@ Android builds publish through `android-release` in `HereLiesAz/workflows` (Goog
 GitHub Releases), requested in `.github/workflow-request.yml`. CI passes `-PversionCode` /
 `-PversionName` and the upload key as `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
 `KEY_PASSWORD`; local builds read `version.properties`.
+
+`.version-state.json` is written by the central controller (`HereLiesAz/workflows`
+version contract sync); it records the last synced version and is not edited by hand.
