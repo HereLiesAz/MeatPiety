@@ -25,6 +25,7 @@
 #   android-dependency-update - managed Android native dependency refresh
 #   android-github-release    - build/sign APK and publish GitHub release
 #   android-play-release      - build/sign AAB and publish to Google Play
+#   android-release           - build/sign/version once; publish to Google Play and GitHub Releases
 #
 # Releases / packages:
 #   artifact-github-release   - publish existing artifacts to GitHub Releases
@@ -44,7 +45,21 @@ requested:
   - ci-validation
   - codeql-scan
   - android-dependency-update
-  - multi-platform-app-release
+  - android-release
+
+# Profile data for android-release (docs/ANDROID_RELEASE.md in HereLiesAz/workflows).
+android_release_profile:
+  package_name: com.hereliesaz.savethebuffalo
+  build_command: ./gradlew :app:bundleRelease :app:assembleRelease --no-daemon --stacktrace
+  aab_glob: app/build/outputs/bundle/release/*.aab
+  apk_glob: app/build/outputs/apk/release/*.apk
+  play_tracks: PLAY_TRACKS
+  github_release: true
+  github_prerelease: false
+  release_app_name: MeatPiety
+  java_version: "21"
+  setup_android: true
+  android_packages: platform-tools
 
 # For a workflow that is not in the menu, describe the GENERAL capability needed.
 # Submit the implementation to HereLiesAz/workflows; do not implement it locally.

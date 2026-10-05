@@ -34,3 +34,10 @@ gradle :shared:wasmJsBrowserDevelopmentRun
 ## Workflows
 
 Do **not** invent repository-local workflow implementations. Choose existing automation or describe a new generalized capability in `.github/workflow-request.yml`. New implementations belong in `HereLiesAz/workflows`.
+
+### Release
+
+Android builds publish through `android-release` in `HereLiesAz/workflows` (Google Play +
+GitHub Releases), requested in `.github/workflow-request.yml`. CI passes `-PversionCode` /
+`-PversionName` and the upload key as `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+`KEY_PASSWORD`; local builds read `version.properties`.
