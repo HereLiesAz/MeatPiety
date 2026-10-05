@@ -33,6 +33,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(compose.components.resources)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -40,3 +41,8 @@ kotlin {
     }
 }
 
+
+// Azrienoch variable font (SIL OFL 1.1, see OFL-azrienoch.txt) ships as a Compose resource.
+compose.resources {
+    packageOfResClass = "com.hereliesaz.meatpiety.resources"
+}

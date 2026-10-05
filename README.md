@@ -25,6 +25,16 @@ Compose, built once and run on both Android and web.
 - minSdk 28
 - JDK 21 (matches the release workflow)
 
+## Design
+
+Scrollytelling chapters ending on a bento recap: parallax field hero with an
+interactive variable-type title (drag to sculpt weight, width and slab serif),
+counting headlines, log-scaled bars, a pictogram, ripple and timeline figures.
+Earth palette in `Theme.kt`; type is **Azrienoch** (variable: `wght`, `wdth`,
+`SERF`, `GRAD`; SIL OFL 1.1, `shared/OFL-azrienoch.txt`) in `Type.kt`; motion
+primitives in `Motion.kt`, figures in `Visuals.kt`. All motion is disabled when
+the platform requests reduced motion.
+
 ## Running the web build
 
 ```
