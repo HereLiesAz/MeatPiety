@@ -1,59 +1,85 @@
 package com.hereliesaz.meatpiety
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+import kotlin.math.log10
 
-private val PietyDark = darkColorScheme(
-    primary = Color(0xFFE0E0E0),
-    onPrimary = Color(0xFF000000),
-    background = Color(0xFF000000),
-    onBackground = Color(0xFFE0E0E0),
-    surface = Color(0xFF0A0A0A),
-    onSurface = Color(0xFFE0E0E0),
-    surfaceVariant = Color(0xFF1A1A1A),
-    onSurfaceVariant = Color(0xFFAAAAAA),
-    outline = Color(0xFF444444),
-)
+/*
+ * Layout: scrollytelling chapters closing on a bento recap.
+ *   Hero (parallax field, interactive variable title) → inputs →
+ *   chapters (yours, your circle, the world), each a counting headline over
+ *   log-scaled bars → buffalo eulogy (kinetic quote) → market → precedent
+ *   timeline with parallax years → bento recap.
+ * All motion honours LocalReducedMotion.
+ */
 
 @Composable
 fun MeatPietyApp() {
-    MaterialTheme(colorScheme = PietyDark) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            LedgerScreen()
+    CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion()) {
+        MaterialTheme(colorScheme = PietyColors, typography = pietyTypography()) {
+            Surface(modifier = Modifier.fillMaxSize(), color = Piety.Soil) {
+                LedgerScreen()
+            }
         }
     }
 }
+
+private val Gutter = 24.dp
+private val MaxColumn = 720.dp
+
+private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(horizontal = Gutter)
+
+private fun List<SparedAnimal>.sparedTotal() = filterNot { it.existsBecauseOfDemand }.sumOf { it.count }
 
 @Composable
 private fun LedgerScreen() {
@@ -69,226 +95,345 @@ private fun LedgerScreen() {
     val world = remember(days) { worldTally(days) }
     val market = remember { marketEffects() }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            // Edge-to-edge is enforced from targetSdk 35; keep content clear of system bars.
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 8.dp),
-    ) {
-        item {
-            Text(
-                text = "Meat Piety",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        item {
-            Text(
-                text = "A ledger of the dead who stayed that way, on your account.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                Diet.entries.forEachIndexed { index, option ->
-                    SegmentedButton(
-                        selected = diet == option,
-                        onClick = { diet = option },
-                        shape = SegmentedButtonDefaults.itemShape(index, Diet.entries.size),
-                    ) {
-                        Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian")
+    val state = rememberLazyListState()
+    val reduced = LocalReducedMotion.current
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val heroHeight = maxHeight
+        LazyColumn(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(bottom = 96.dp),
+        ) {
+            item(key = "hero") {
+                Hero(heroHeight) {
+                    if (state.firstVisibleItemIndex == 0) state.firstVisibleItemScrollOffset.toFloat() else 1e5f
+                }
+            }
+            item(key = "inputs") {
+                Column(
+                    Modifier.column().windowInsetsPadding(WindowInsets.safeDrawing).padding(top = 32.dp).reveal(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Eyebrow("Your terms")
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        Diet.entries.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = diet == option,
+                                onClick = { diet = option },
+                                shape = SegmentedButtonDefaults.itemShape(index, Diet.entries.size),
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = Piety.Moss, activeContentColor = Piety.Oat,
+                                    inactiveContainerColor = Color.Transparent, inactiveContentColor = Piety.Lichen,
+                                    activeBorderColor = Piety.Fern, inactiveBorderColor = Piety.Rule,
+                                ),
+                            ) { Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian") }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NumberField(daysText, { daysText = it }, "Days lived this way", Modifier.weight(1f))
+                        NumberField(friendsText, { friendsText = it }, "Facebook friends", Modifier.weight(1f))
                     }
                 }
             }
-        }
-        item {
-            OutlinedTextField(
-                value = daysText,
-                onValueChange = { daysText = it.filter(Char::isDigit).take(MAX_INPUT_DIGITS) },
-                label = { Text("Days lived this way") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            OutlinedTextField(
-                value = friendsText,
-                onValueChange = { friendsText = it.filter(Char::isDigit).take(MAX_INPUT_DIGITS) },
-                label = { Text("Facebook friends") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
 
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item { SectionHeader("Your ledger") }
-        items(personal) { LedgerRow(it) }
+            chapter(
+                key = "yours", number = "01", title = "Your ledger",
+                caption = "Every one of these is an animal a standard U.S. diet would have put through the system on your behalf.",
+                animals = personal, accent = Piety.Sage,
+            ) {
+                Pictogram(
+                    count = personal.sparedTotal(), cap = 200, color = Piety.Sage,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(2f).padding(vertical = 8.dp),
+                )
+                Text("ONE MARK PER ANIMAL, UP TO 200", style = MaterialTheme.typography.labelSmall, color = Piety.Lichen)
+            }
 
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item {
-            SectionHeader(
-                title = "If your conscience were contagious",
+            chapter(
+                key = "circle", number = "02", title = "If your conscience were contagious",
                 caption = "As if all $friends of your friends had done exactly what you did, for exactly as long.",
-            )
-        }
-        items(sphere) { LedgerRow(it) }
+                animals = sphere, accent = Piety.Fern,
+            ) {
+                Ripples(
+                    rings = 1 + log10(1.0 + friends).toInt() * 2, color = Piety.Fern,
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                )
+            }
 
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item {
-            SectionHeader(
-                title = "Meanwhile, out there",
+            chapter(
+                key = "world", number = "03", title = "Meanwhile, out there",
                 caption = "An estimated ${format(world.veganPopulation.toDouble())} vegans and " +
                     "${format(world.vegetarianPopulation.toDouble())} vegetarians worldwide, keeping this up " +
                     "for the same $days days — each counted as if they'd otherwise eaten a U.S. standard diet, " +
                     "which most of them never would have. Population figures are estimates, not a census.",
+                animals = world.animals, accent = Piety.Sprout,
             )
-        }
-        items(world.animals) { LedgerRow(it) }
 
-        item {
+            item(key = "eulogy") { Eulogy(Modifier.column().padding(vertical = 72.dp)) }
+
+            item(key = "market-head") {
+                ChapterHead(
+                    "04", "What happens to the price",
+                    "Today's abstainers are already a standing demand shock. Modeled from published " +
+                        "demand and supply elasticities, not observed — nobody's run this experiment at scale.",
+                )
+            }
+            itemsIndexed(market, key = { _, it -> "market-${it.name}" }) { i, effect ->
+                MarketRow(effect, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            }
+
+            item(key = "history-head") {
+                ChapterHead(
+                    "05", "This has happened before",
+                    "Demand didn't just spare buffalo. It's the reason several species exist at all — " +
+                        "and the reason at least one doesn't.",
+                )
+            }
+            itemsIndexed(EXTINCTION_PRECEDENTS, key = { _, it -> "p-${it.species}" }) { _, p ->
+                PrecedentRow(p, state, "p-${p.species}", parallax = !reduced)
+            }
+
+            item(key = "recap") { Recap(personal, sphere, world, market, Modifier.column().padding(top = 96.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun Hero(height: Dp, scroll: () -> Float) {
+    Box(Modifier.fillMaxWidth().height(height.coerceIn(520.dp, 900.dp))) {
+        FieldBackdrop(scroll, Modifier.fillMaxSize())
+        Column(
+            Modifier
+                .align(Alignment.Center)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .column()
+                .graphicsLayer {
+                    // Title drifts up and fades faster than the page scrolls.
+                    val s = scroll().coerceAtMost(size.height * 2)
+                    translationY = -s * 0.35f
+                    alpha = (1f - s / (size.height * 1.4f)).coerceIn(0f, 1f)
+                },
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Eyebrow("A calculator for the abstaining")
+            KineticTitle("Meat", 92.sp, Piety.Oat)
+            KineticTitle("Piety", 92.sp, Piety.Sage)
             Text(
-                text = "Buffalo don't run on this ledger like the rest. Ranching is most of why they still " +
-                    "exist at all — fewer eaten means fewer bred, not fewer killed. Every other line here is " +
-                    "a rescue. That one's a eulogy.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontStyle = FontStyle.Italic,
+                "A ledger of the dead who stayed that way, on your account.",
+                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 20.sp),
+                color = Piety.Lichen,
             )
-        }
-
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item {
-            SectionHeader(
-                title = "What happens to the price",
-                caption = "Today's abstainers are already a standing demand shock. Modeled from published " +
-                    "demand and supply elasticities, not observed — nobody's run this experiment at scale.",
-            )
-        }
-        items(market) { MarketRow(it) }
-
-        item { HorizontalDivider(color = MaterialTheme.colorScheme.outline) }
-        item {
-            SectionHeader(
-                title = "This has happened before",
-                caption = "Demand didn't just spare buffalo. It's the reason several species exist at all — " +
-                    "and the reason at least one doesn't.",
-            )
-        }
-        items(EXTINCTION_PRECEDENTS) { PrecedentRow(it) }
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String, caption: String? = null) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        if (caption != null) {
-            Text(
-                text = caption,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Spacer(Modifier.height(8.dp))
+            Eyebrow("Drag across the title · Scroll to begin")
         }
     }
 }
 
 @Composable
-private fun LedgerRow(animal: SparedAnimal) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = animal.name, style = MaterialTheme.typography.titleMedium)
+private fun Eyebrow(text: String, color: Color = Piety.Fern) {
+    Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color)
+}
+
+@Composable
+private fun NumberField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onChange(it.filter(Char::isDigit).take(MAX_INPUT_DIGITS)) },
+        label = { Text(label) },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp, color = Piety.Oat),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Piety.Sage, unfocusedBorderColor = Piety.Rule,
+            focusedLabelColor = Piety.Sage, unfocusedLabelColor = Piety.Lichen, cursorColor = Piety.Sage,
+            focusedContainerColor = Piety.Loam, unfocusedContainerColor = Piety.Loam,
+        ),
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ChapterHead(number: String, title: String, caption: String) {
+    Column(
+        Modifier.column().padding(top = 96.dp, bottom = 16.dp).reveal(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(number, style = MaterialTheme.typography.labelLarge, color = Piety.Fern)
+            Box(Modifier.height(1.dp).width(48.dp).background(Piety.Moss))
+        }
+        Text(title, style = MaterialTheme.typography.displayMedium, color = Piety.Oat)
+        Text(caption, style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen)
+    }
+}
+
+private fun LazyListScope.chapter(
+    key: String,
+    number: String,
+    title: String,
+    caption: String,
+    animals: List<SparedAnimal>,
+    accent: Color,
+    figure: (@Composable () -> Unit)? = null,
+) {
+    item(key = "$key-head") { ChapterHead(number, title, caption) }
+    item(key = "$key-total") {
+        Column(Modifier.column().padding(bottom = 24.dp).reveal(120)) {
+            Counter(animals.sparedTotal(), MaterialTheme.typography.displayLarge, accent) { format(it) }
+            Text("animals spared", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
+            if (figure != null) {
+                Spacer(Modifier.height(16.dp))
+                figure()
+            }
+        }
+    }
+    val max = animals.maxOfOrNull { abs(it.count) } ?: 0.0
+    itemsIndexed(animals, key = { _, it -> "$key-${it.name}" }) { i, animal ->
+        LedgerRow(animal, max, accent, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+    }
+}
+
+@Composable
+private fun LedgerRow(animal: SparedAnimal, max: Double, accent: Color, modifier: Modifier) {
+    val backward = animal.existsBecauseOfDemand
+    val colour = if (backward) Piety.Clay else accent
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(animal.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Counter(animal.count, MaterialTheme.typography.bodyLarge, colour) {
+                if (backward) "${format(it)} fewer will ever be born" else "${format(it)} spared"
+            }
+        }
+        LogBar(animal.count, max, colour)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Eulogy(modifier: Modifier) {
+    val words = (
+        "Buffalo don't run on this ledger like the rest. Ranching is most of why they still " +
+            "exist at all — fewer eaten means fewer bred, not fewer killed. Every other line here is " +
+            "a rescue. That one's a eulogy."
+        ).split(" ")
+    val shape = RoundedCornerShape(28.dp)
+    Column(
+        modifier
+            .reveal()
+            .background(Piety.Loam, shape)
+            .border(1.dp, Piety.Clay.copy(alpha = 0.4f), shape)
+            .padding(28.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Eyebrow("The line that runs backward", Piety.Clay)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            val light = MaterialTheme.typography.headlineMedium.copy(fontFamily = azrienoch(Axes(wght = 300)))
+            val heavy = MaterialTheme.typography.headlineMedium.copy(fontFamily = azrienoch(Axes(wght = 820, serf = 100)))
+            words.forEachIndexed { i, w ->
+                // Words arrive one by one; the last sentence lands in heavy slab.
+                val last = i >= words.size - 3
+                Text(
+                    w,
+                    style = if (last) heavy else light,
+                    color = if (last) Piety.Clay else Piety.Oat,
+                    modifier = Modifier.reveal(delayMillis = i * 35),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MarketRow(effect: MarketEffect, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(effect.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text(formatPercent(effect.percentPriceChange), style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
+        }
         Text(
-            text = if (animal.existsBecauseOfDemand) {
-                "${format(animal.count)} fewer will ever be born"
-            } else {
-                "${format(animal.count)} spared"
-            },
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            fontStyle = if (animal.existsBecauseOfDemand) FontStyle.Italic else FontStyle.Normal,
+            "${formatPrice(effect.currentPrice)} → ${formatPrice(effect.newPrice)} ${effect.unit}",
+            style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
         )
-    }
-}
-
-@Composable
-private fun MarketRow(effect: MarketEffect) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = effect.name, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = "${formatPrice(effect.currentPrice)} → ${formatPrice(effect.newPrice)} ${effect.unit} " +
-                "(${formatPercent(effect.percentPriceChange)})",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-        )
+        // Linear scale here: price changes all sit within one order of magnitude.
+        LinearBar(abs(effect.percentPriceChange) / 0.4, if (effect.belowBreakeven) Piety.Clay else Piety.Fern)
         if (effect.belowBreakeven) {
             Text(
-                text = "Past an illustrative producer-margin line — herds would get thinned, not just margins.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontStyle = FontStyle.Italic,
+                "Past an illustrative producer-margin line — herds would get thinned, not just margins.",
+                style = MaterialTheme.typography.bodySmall, color = Piety.Clay,
             )
         }
     }
 }
 
 @Composable
-private fun PrecedentRow(precedent: ExtinctionPrecedent) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+private fun PrecedentRow(p: ExtinctionPrecedent, state: LazyListState, key: String, parallax: Boolean) {
+    Box(Modifier.column().padding(vertical = 20.dp)) {
+        // Oversized hairline year sits behind the text and drifts against the scroll.
         Text(
-            text = "${precedent.species} — ${precedent.year}",
-            style = MaterialTheme.typography.titleMedium,
+            p.year.toString(),
+            style = MaterialTheme.typography.displayLarge.copy(fontSize = 120.sp, fontFamily = azrienoch(Axes(wght = 100, wdth = 75))),
+            color = Piety.Moss.copy(alpha = 0.35f),
+            modifier = Modifier.align(Alignment.TopEnd).parallax(state, key, rate = -0.25f, enabled = parallax),
         )
-        Text(
-            text = precedent.event,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = precedent.detail,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(Modifier.reveal()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(end = 16.dp, top = 4.dp)) {
+                Box(Modifier.size(12.dp).background(Piety.Sage, RoundedCornerShape(6.dp)))
+                Box(Modifier.width(1.dp).height(120.dp).background(Piety.Moss))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Eyebrow("${p.year} · ${p.species}")
+                Text(p.event, style = MaterialTheme.typography.titleLarge, color = Piety.Oat)
+                Text(p.detail, style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen)
+            }
+        }
     }
 }
 
-// Nine digits always parse as Int, so the field never shows a number the math ignores.
-private const val MAX_INPUT_DIGITS = 9
-
-private fun formatPercent(fraction: Double): String {
-    val tenths = kotlin.math.round(fraction * 1000).toLong()
-    val sign = if (tenths < 0) "-" else if (tenths > 0) "+" else ""
-    val magnitude = abs(tenths)
-    return "$sign${magnitude / 10}.${magnitude % 10}%"
-}
-
-private fun formatPrice(price: Double): String {
-    val cents = kotlin.math.round(price * 100).toLong()
-    val wholePart = cents / 100
-    val centPart = abs(cents % 100)
-    val centStr = if (centPart < 10) "0$centPart" else "$centPart"
-    return "$$wholePart.$centStr"
-}
-
-private fun format(count: Double): String {
-    val n = abs(count)
-    return if (n >= 1000) formatWithThousands(n) else formatOneDecimal(n)
-}
-
-private fun formatOneDecimal(n: Double): String {
-    val tenths = kotlin.math.round(n * 10).toLong()
-    return "${tenths / 10}.${tenths % 10}"
-}
-
-private fun formatWithThousands(n: Double): String {
-    val digits = kotlin.math.round(n).toLong().toString()
-    val grouped = StringBuilder()
-    for ((index, digit) in digits.withIndex()) {
-        val remaining = digits.length - index
-        if (index != 0 && remaining % 3 == 0) grouped.append(',')
-        grouped.append(digit)
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Recap(
+    personal: List<SparedAnimal>,
+    sphere: List<SparedAnimal>,
+    world: WorldTally,
+    market: List<MarketEffect>,
+    modifier: Modifier,
+) {
+    val top = personal.filterNot { it.existsBecauseOfDemand }.maxByOrNull { it.count }
+    val steepest = market.minByOrNull { it.percentPriceChange }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Eyebrow("In sum")
+        Text("The whole ledger", style = MaterialTheme.typography.displayMedium, color = Piety.Oat)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            maxItemsInEachRow = 2,
+        ) {
+            Tile("You", format(personal.sparedTotal()), "animals spared", Piety.Sage, Modifier.weight(1f))
+            Tile("Your circle", format(sphere.sparedTotal()), "if they followed", Piety.Fern, Modifier.weight(1f))
+            Tile("Everyone abstaining", format(world.animals.sparedTotal()), "over the same span", Piety.Sprout, Modifier.fillMaxWidth())
+            if (top != null) Tile("Most spared", top.name, "${format(top.count)} of them", Piety.Sage, Modifier.weight(1f))
+            if (steepest != null) {
+                Tile("Steepest price drop", steepest.name, formatPercent(steepest.percentPriceChange), Piety.Clay, Modifier.weight(1f))
+            }
+        }
     }
-    return grouped.toString()
+}
+
+@Composable
+private fun Tile(label: String, value: String, note: String, accent: Color, modifier: Modifier) {
+    val shape = RoundedCornerShape(24.dp)
+    Column(
+        modifier
+            .reveal()
+            .background(Piety.Loam, shape)
+            .border(1.dp, Piety.Rule, shape)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Eyebrow(label, Piety.Lichen)
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = accent)
+        Text(note, style = MaterialTheme.typography.bodySmall, color = Piety.Lichen)
+    }
 }
