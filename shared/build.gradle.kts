@@ -28,14 +28,14 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
         }
-        androidMain.dependencies {
-            implementation("androidx.activity:activity-compose:1.13.0")
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
 
 android {
-    namespace = "com.hereliesaz.savethebuffalo.shared"
+    namespace = "com.hereliesaz.meatpiety.shared"
     compileSdk = 37
 
     defaultConfig {

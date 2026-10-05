@@ -1,4 +1,4 @@
-package com.hereliesaz.savethebuffalo
+package com.hereliesaz.meatpiety
 
 import androidx.compose.ui.window.ComposeViewport
 

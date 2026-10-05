@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SaveTheBuffalo"
+rootProject.name = "MeatPiety"
 include(":app", ":shared")

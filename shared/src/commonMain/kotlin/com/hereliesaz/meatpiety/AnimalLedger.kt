@@ -1,4 +1,4 @@
-package com.hereliesaz.savethebuffalo
+package com.hereliesaz.meatpiety
 
 enum class Diet { VEGAN, VEGETARIAN }
 
@@ -14,7 +14,7 @@ data class WorldTally(
     val animals: List<SparedAnimal>,
 )
 
-private data class AnimalRate(
+internal data class AnimalRate(
     val name: String,
     val perYearOnStandardDiet: Double,
     val requiresVeganism: Boolean,
@@ -29,7 +29,7 @@ private data class AnimalRate(
 // Association's 2023 U.S. harvest count versus U.S. population. Sheep and
 // lambs are derived from USDA per-capita lamb/mutton consumption. All are
 // best available real-world estimates, not lab-grade measurements.
-private val RATES = listOf(
+internal val RATES = listOf(
     AnimalRate("Chickens", 23.2, requiresVeganism = false),
     AnimalRate("Fish", 15.5, requiresVeganism = false),
     AnimalRate("Shellfish", 131.1, requiresVeganism = false),

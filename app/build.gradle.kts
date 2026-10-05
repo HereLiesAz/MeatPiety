@@ -19,11 +19,11 @@ val appVersionName = (findProperty("versionName") ?: versionProps.getProperty("v
 val keystoreFile = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 
 android {
-    namespace = "com.hereliesaz.savethebuffalo"
+    namespace = "com.hereliesaz.meatpiety"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.hereliesaz.savethebuffalo"
+        applicationId = "com.hereliesaz.meatpiety"
         minSdk = 28
         targetSdk = 37
         versionCode = appVersionCode
