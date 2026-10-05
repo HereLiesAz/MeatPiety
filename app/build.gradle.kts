@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Versioning contract (HereLiesAz/workflows android-release): CI passes -PversionCode and
+// -PversionName; local builds fall back to the pair recorded in version.properties.
+// Nothing here increments anything.
+val versionProps = Properties().apply {
+    rootProject.file("version.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+val appVersionCode = (findProperty("versionCode") ?: versionProps.getProperty("versionCode") ?: "1").toString().toInt()
+val appVersionName = (findProperty("versionName") ?: versionProps.getProperty("versionName")
+    ?: "${versionProps.getProperty("versionMajor", "0")}.${versionProps.getProperty("versionMinor", "1")}.${versionProps.getProperty("versionPatch", "0")}").toString()
+
+// Upload key arrives from CI as KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD.
+val keystoreFile = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "com.hereliesaz.savethebuffalo"
@@ -11,8 +26,25 @@ android {
         applicationId = "com.hereliesaz.savethebuffalo"
         minSdk = 28
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+    }
+
+    signingConfigs {
+        if (keystoreFile != null) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (keystoreFile != null) signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     buildFeatures {
