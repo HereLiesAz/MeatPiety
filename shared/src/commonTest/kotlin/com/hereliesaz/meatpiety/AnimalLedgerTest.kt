@@ -51,3 +51,11 @@ class AnimalLedgerTest {
         }
     }
 }
+
+class SphereOverflowTest {
+    @Test
+    fun maxFriendsDoesNotWrapNegative() {
+        val sphere = sphereOfInfluence(animalsSpared(365, Diet.VEGAN), Int.MAX_VALUE)
+        assertTrue(sphere.filterNot { it.existsBecauseOfDemand }.all { it.count > 0 })
+    }
+}

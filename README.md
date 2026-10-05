@@ -19,7 +19,7 @@ Compose, built once and run on both Android and web.
 ## Stack
 
 - Android Gradle Plugin 9.4.1
-- Kotlin Multiplatform 2.4.20, Compose Multiplatform 1.9.0
+- Kotlin Multiplatform 2.4.20, Compose Multiplatform 1.12.1, Gradle 9.6.1
 - Jetpack Compose / Material 3
 - compileSdk / targetSdk 37
 - minSdk 28
@@ -34,7 +34,7 @@ Compose, built once and run on both Android and web.
 ## Tests
 
 ~~~
-./gradlew :shared:allTests
+./gradlew :shared:testAndroidHostTest
 ~~~
 
 Calculator logic lives in `shared/src/commonTest`.

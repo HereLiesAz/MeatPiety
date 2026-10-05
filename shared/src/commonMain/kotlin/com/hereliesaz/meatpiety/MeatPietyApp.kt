@@ -108,7 +108,7 @@ private fun LedgerScreen() {
         item {
             OutlinedTextField(
                 value = daysText,
-                onValueChange = { daysText = it.filter(Char::isDigit) },
+                onValueChange = { daysText = it.filter(Char::isDigit).take(MAX_INPUT_DIGITS) },
                 label = { Text("Days lived this way") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -117,7 +117,7 @@ private fun LedgerScreen() {
         item {
             OutlinedTextField(
                 value = friendsText,
-                onValueChange = { friendsText = it.filter(Char::isDigit) },
+                onValueChange = { friendsText = it.filter(Char::isDigit).take(MAX_INPUT_DIGITS) },
                 label = { Text("Facebook friends") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -143,7 +143,8 @@ private fun LedgerScreen() {
                 title = "Meanwhile, out there",
                 caption = "An estimated ${format(world.veganPopulation.toDouble())} vegans and " +
                     "${format(world.vegetarianPopulation.toDouble())} vegetarians worldwide, keeping this up " +
-                    "for the same $days days. Best real-world estimates, not a census.",
+                    "for the same $days days — each counted as if they'd otherwise eaten a U.S. standard diet, " +
+                    "which most of them never would have. Population figures are estimates, not a census.",
             )
         }
         items(world.animals) { LedgerRow(it) }
@@ -224,7 +225,7 @@ private fun MarketRow(effect: MarketEffect) {
         )
         if (effect.belowBreakeven) {
             Text(
-                text = "Below what it costs to keep breeding them — herds get thinned, not just margins.",
+                text = "Past an illustrative producer-margin line — herds would get thinned, not just margins.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontStyle = FontStyle.Italic,
@@ -252,6 +253,9 @@ private fun PrecedentRow(precedent: ExtinctionPrecedent) {
         )
     }
 }
+
+// Nine digits always parse as Int, so the field never shows a number the math ignores.
+private const val MAX_INPUT_DIGITS = 9
 
 private fun formatPercent(fraction: Double): String {
     val tenths = kotlin.math.round(fraction * 1000).toLong()

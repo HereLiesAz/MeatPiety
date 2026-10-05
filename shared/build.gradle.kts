@@ -1,18 +1,24 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
 }
 
 kotlin {
-    androidTarget()
+    android {
+        namespace = "com.hereliesaz.meatpiety.shared"
+        compileSdk = 37
+        minSdk = 28
+        // Runs commonTest on the JVM; wasm tests need a browser.
+        withHostTest {}
+    }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "meatpiety"
+        outputModuleName.set("meatpiety")
         browser {
             commonWebpackConfig {
                 outputFileName = "meatpiety.js"
@@ -34,11 +40,3 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.hereliesaz.meatpiety.shared"
-    compileSdk = 37
-
-    defaultConfig {
-        minSdk = 28
-    }
-}

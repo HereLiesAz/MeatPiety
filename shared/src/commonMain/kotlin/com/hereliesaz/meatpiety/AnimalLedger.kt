@@ -63,7 +63,8 @@ fun animalsSpared(days: Int, diet: Diet): List<SparedAnimal> {
 }
 
 fun sphereOfInfluence(personal: List<SparedAnimal>, friendCount: Int): List<SparedAnimal> {
-    val multiplier = (friendCount + 1).toDouble()
+    // Double before +1: friendCount = Int.MAX_VALUE would otherwise wrap negative.
+    val multiplier = friendCount.toDouble() + 1.0
     return personal.map { it.copy(count = it.count * multiplier) }
 }
 
