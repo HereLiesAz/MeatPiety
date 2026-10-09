@@ -55,8 +55,9 @@ Do **not** invent repository-local workflow implementations. Choose existing aut
 
 ### Release
 
-Android builds publish through `android-release` in `HereLiesAz/workflows` (Google Play +
-GitHub Releases), requested in `.github/workflow-request.yml`. CI passes `-PversionCode` /
+Android builds publish through `android-play-release` (Google Play) and
+`android-github-release` (GitHub Releases) in `HereLiesAz/workflows`; the trigger contracts are
+in `.github/workflows/` and the controller replaces them with trackers. CI passes `-PversionCode` /
 `-PversionName` and the upload key as `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
 `KEY_PASSWORD`; local builds read `version.properties`.
 
