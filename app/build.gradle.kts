@@ -44,6 +44,11 @@ android {
     buildTypes {
         release {
             if (keystoreFile != null) signingConfig = signingConfigs.getByName("release")
+            // R8 shrinks the release build and emits mapping.txt, which Play requires to
+            // deobfuscate crash reports.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
