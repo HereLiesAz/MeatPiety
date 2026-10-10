@@ -42,6 +42,16 @@ the hero, buffalo eulogy, and bento surfaces carry restrained weathering.
 Gold denotes ornament, clay denotes loss, and greens retain their ledger
 meaning. Inputs, labels, animated counts, and graph values remain crisp.
 
+### Android launcher icon
+
+The Android launcher uses the full-bleed cow artwork in
+`app/src/main/res/drawable-nodpi/ic_launcher_art.webp` (512 × 512).
+`mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` use
+that image as the adaptive background and a transparent foreground.
+No rounded corners are baked into the asset; the device launcher applies
+its own adaptive mask and can crop the image's outermost details.
+The manifest declares both `android:icon` and `android:roundIcon`.
+
 ## Running the web build
 
 ```
