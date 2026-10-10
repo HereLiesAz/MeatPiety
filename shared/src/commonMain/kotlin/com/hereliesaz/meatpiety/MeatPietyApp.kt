@@ -1,6 +1,7 @@
 package com.hereliesaz.meatpiety
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
@@ -203,6 +207,7 @@ private fun LedgerScreen() {
 private fun Hero(height: Dp, scroll: () -> Float) {
     Box(Modifier.fillMaxWidth().height(height.coerceIn(520.dp, 900.dp))) {
         FieldBackdrop(scroll, Modifier.fillMaxSize())
+        Box(Modifier.matchParentSize().inkPatina())
         Column(
             Modifier
                 .align(Alignment.Center)
@@ -261,8 +266,12 @@ private fun ChapterHead(number: String, title: String, caption: String) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(number, style = MaterialTheme.typography.labelLarge, color = Piety.Fern)
-            Box(Modifier.height(1.dp).width(48.dp).background(Piety.Moss))
+            Text(number, style = MaterialTheme.typography.labelLarge, color = Piety.Gold)
+            Canvas(Modifier.height(8.dp).width(48.dp)) {
+                val y = size.height / 2f
+                drawLine(Piety.Gold.copy(alpha = 0.56f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                drawCircle(Piety.Gold, radius = 2.dp.toPx(), center = Offset(size.width, y))
+            }
         }
         Text(title, style = MaterialTheme.typography.displayMedium, color = Piety.Oat)
         Text(caption, style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen)
@@ -323,11 +332,14 @@ private fun Eulogy(modifier: Modifier) {
         modifier
             .reveal()
             .background(Piety.Loam, shape)
+            .clip(shape)
+            .inkPatina()
             .border(1.dp, Piety.Clay.copy(alpha = 0.4f), shape)
             .padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Eyebrow("The line that runs backward", Piety.Clay)
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Piety.Gold.copy(alpha = 0.36f)))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             val light = MaterialTheme.typography.headlineMedium.copy(fontFamily = azrienoch(Axes(wght = 300)))
             val heavy = MaterialTheme.typography.headlineMedium.copy(fontFamily = azrienoch(Axes(wght = 820, serf = 100)))
@@ -428,6 +440,8 @@ private fun Tile(label: String, value: String, note: String, accent: Color, modi
         modifier
             .reveal()
             .background(Piety.Loam, shape)
+            .clip(shape)
+            .inkPatina()
             .border(1.dp, Piety.Rule, shape)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),

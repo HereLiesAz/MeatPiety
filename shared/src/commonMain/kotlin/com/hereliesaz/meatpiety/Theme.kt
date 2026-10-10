@@ -17,6 +17,7 @@ object Piety {
     val Oat = Color(0xFFEDE6D6)
     val Lichen = Color(0xFF9AA595)
     val Clay = Color(0xFFC8734F)
+    val Gold = Color(0xFFC89B53) // Ornamental only; never denotes a ledger result.
     val Rule = Color(0xFF2C372F)
 }
 

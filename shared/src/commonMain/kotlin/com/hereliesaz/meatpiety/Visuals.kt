@@ -28,7 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -47,6 +49,38 @@ import kotlin.math.exp
 import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.sin
+
+/**
+ * Static, deterministic print erosion. The cached paths are built when the
+ * drawing area's size changes, not when animations advance. Apply after a
+ * background and before content; never draw texture over text or figures.
+ */
+fun Modifier.inkPatina(ink: Color = Piety.Oat): Modifier = drawWithCache {
+    val spots = Path()
+    val scratches = Path()
+    val step = max(18.dp.toPx(), max(size.width, size.height) / 160f)
+    val columns = (size.width / step).toInt()
+    val rows = (size.height / step).toInt()
+    for (row in 0..rows) {
+        for (column in 0..columns) {
+            val hash = (row * 193 + column * 97 + row * column * 31) % 101
+            val x = (column + 0.2f + hash % 5 * 0.12f) * step
+            val y = (row + 0.15f + hash % 7 * 0.1f) * step
+            if (hash % 5 == 0) {
+                val radius = (0.3f + hash % 3 * 0.25f).dp.toPx()
+                spots.addOval(Rect(x - radius, y - radius, x + radius, y + radius))
+            }
+            if (hash == 17 || hash == 89) {
+                scratches.moveTo(x, y)
+                scratches.lineTo(x + step * 0.23f, y - step * 0.16f)
+            }
+        }
+    }
+    onDrawBehind {
+        drawPath(spots, ink.copy(alpha = 0.085f))
+        drawPath(scratches, ink.copy(alpha = 0.12f), style = Stroke(0.65.dp.toPx()))
+    }
+}
 
 /**
  * Interactive variable-type title. Each glyph's weight, width and slab serif
@@ -176,8 +210,23 @@ fun FieldBackdrop(scroll: () -> Float, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val s = if (reduced) 0f else scroll()
         drawRect(Brush.verticalGradient(listOf(Piety.Bark, Piety.Soil)))
-        // Sun disc, slowest layer.
+        // The existing sun remains the slowest layer of the landscape.
         drawCircle(Piety.Sprout.copy(alpha = 0.10f), radius = size.width * 0.28f, center = Offset(size.width * 0.72f, size.height * 0.32f + s * 0.15f))
+        // Engraved halo / registration marks: an icon motif, not a data signal.
+        val seal = Offset(size.width * 0.58f, size.height * 0.36f + s * 0.15f)
+        val radius = size.minDimension * 0.46f
+        drawCircle(Piety.Gold.copy(alpha = 0.31f), radius, seal, style = Stroke(1.7.dp.toPx()))
+        drawCircle(Piety.Gold.copy(alpha = 0.14f), radius * 0.78f, seal, style = Stroke(0.8.dp.toPx()))
+        drawLine(
+            Piety.Gold.copy(alpha = 0.17f),
+            Offset(seal.x, seal.y - radius * 1.16f), Offset(seal.x, seal.y + radius * 1.16f),
+            strokeWidth = 0.8.dp.toPx(),
+        )
+        drawLine(
+            Piety.Gold.copy(alpha = 0.14f),
+            Offset(seal.x - radius * 1.16f, seal.y), Offset(seal.x + radius * 1.16f, seal.y),
+            strokeWidth = 0.8.dp.toPx(),
+        )
         val layers = listOf(0.25f to Piety.Moss.copy(alpha = 0.35f), 0.45f to Piety.Moss.copy(alpha = 0.6f), 0.7f to Piety.Loam)
         layers.forEachIndexed { i, (rate, colour) ->
             val base = size.height * (0.62f + i * 0.1f) + s * rate

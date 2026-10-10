@@ -35,6 +35,13 @@ Earth palette in `Theme.kt`; type is **Azrienoch** (variable: `wght`, `wdth`,
 primitives in `Motion.kt`, figures in `Visuals.kt`. All motion is disabled when
 the platform requests reduced motion.
 
+Distressed editorial treatment is decorative only: `Visuals.kt` provides
+`Modifier.inkPatina()` with deterministic, size-cached ink erosion painted
+behind content. The field hero adds antique-gold halo/registration lines;
+the hero, buffalo eulogy, and bento surfaces carry restrained weathering.
+Gold denotes ornament, clay denotes loss, and greens retain their ledger
+meaning. Inputs, labels, animated counts, and graph values remain crisp.
+
 ## Running the web build
 
 ```
