@@ -24,6 +24,9 @@ data class Impact(
     val netAnimals: Double,
     val reboundUnits: Double,
     val breedersNotKept: Double?,
+    // Little's law: fewer slaughtered per year × years each animal lives before
+    // slaughter = how many fewer are alive at any one moment.
+    val fewerAliveAtOnce: Double?,
     val birthingsNotNeeded: Double?,
     val producerRevenueLostUsd: Double,
     val belowBreakeven: Boolean,
@@ -34,7 +37,7 @@ data class Impact(
 }
 
 data class Layer(val impacts: List<Impact>) {
-    /** Net animals not raised, excluding the backward (bred-for-demand) lines. */
+    /** Net fewer animals slaughtered, excluding the backward (bred-for-demand) lines. */
     val netSpared get() = impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.netAnimals }
     val grossSpared get() = impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.grossAnimals }
 }
@@ -74,6 +77,7 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
         // Breeders are a standing herd: an annual rate of animals not raised,
         // divided by what one breeder produces a year.
         breedersNotKept = bio?.let { if (years > 0) netAnimals / years / it.offspringPerBreederYear else 0.0 },
+        fewerAliveAtOnce = bio?.let { if (years > 0) netAnimals / years * it.slaughterAgeDays / 365.0 else 0.0 },
         birthingsNotNeeded = bio?.let { netAnimals / it.perBirthing },
         producerRevenueLostUsd = (revenueBefore - revenueAfter) * years,
         belowBreakeven = -priceChange >= species.breakevenDrop,

@@ -92,3 +92,18 @@ class MilestoneTest {
         assertEquals("100.00 SEK", Money("SEK", 10.0).format(10.0))
     }
 }
+
+class WholeAnimalTest {
+    @Test
+    fun fractionsReadAsProgressToTheNextWholeAnimal() {
+        assertEquals("2 · the next in 20 days", wholeAnimals(2.5, 100))
+        assertEquals("25% of the first · the next in 300 days", wholeAnimals(0.25, 100))
+        assertEquals("none yet", wholeAnimals(0.0, 100))
+    }
+
+    @Test
+    fun fewerAliveFollowsLittlesLaw() {
+        val chicken = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        assertEquals(chicken.netAnimals * 47 / 365.0, chicken.fewerAliveAtOnce!!, 1e-9)
+    }
+}
