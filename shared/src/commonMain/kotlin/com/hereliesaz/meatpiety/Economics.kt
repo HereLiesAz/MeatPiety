@@ -48,6 +48,7 @@ data class Impact(
     val producerRevenueLostUsd: Double,
     val belowBreakeven: Boolean,
     val usdPrice: Double,
+    val years: Double,
 ) {
     val reboundAnimals get() = grossAnimals - netAnimals
     /** Every animal not born: market animals plus the breeders that would have replaced the herd. */
@@ -129,6 +130,7 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
         producerRevenueLostUsd = (revenueBefore - revenueAfter) * years,
         belowBreakeven = -priceChange >= species.breakevenDrop,
         usdPrice = usdPrice,
+        years = years,
     )
 }
 

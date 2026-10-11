@@ -36,6 +36,12 @@ Compose, built once and run on both Android and web.
   growth (`ABSTAINER_GROWTH`, a stated guess).
 - `Footprint.kt` — CO₂e, land and water per kg (Poore & Nemecek 2018),
   applied to net production cut, so it follows the same chain.
+- `Outlook.kt` — years until commercial breeding ends per species (price
+  past producer margin as abstainers grow), what survives outside the market,
+  and feed soy freed by animals never bred, as tofu.
+- `Consolidation.kt` — lower prices close smaller, higher-cost farms first;
+  counts animals still bred that move into factory farms (Sentience Institute
+  shares; small-farm margin = half the industry's, illustrative).
 - `Influence.kt` — linked handles → follower counts → reached (organic reach
   per platform, overlap-discounted) → persuaded → still abstaining (16%).
   No linked account with a readable count, no influence chapter.
