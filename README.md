@@ -46,9 +46,12 @@ caching each answer for a day:
   the worker or hide counts; the app then leaves that account out. X is not
   supported.
 
+Pushes to `main` touching `worker/` deploy it through `cloudflare-worker-deploy`
+in `HereLiesAz/workflows` (trigger contract `.github/workflows/worker-deploy.yml`).
+Locally:
+
 ~~~
-cd worker && npx wrangler deploy
-npm test
+cd worker && npm test
 ~~~
 
 ## Modules
