@@ -18,51 +18,38 @@ Count every animal your vegan or vegetarian life has spared. Watch it grow.
 ## Full description
 
 ~~~
-A ledger of the dead who stayed that way, on your account.
+Every meal you skip changes something. Meat Piety shows you exactly what.
 
-Most vegan calculators flatter you. Eat no chicken for a year, they say, and twenty-three chickens live. It's a lovely thought. It's also not how markets work.
+Pick the day you went vegan or vegetarian. From then on, Meat Piety keeps a living ledger of the animals, land, water and money your choice has spared, and it grows every single day.
 
-When you stop buying meat, the price drops a little. Someone else buys the cheaper meat. Farmers notice, eventually, and breed fewer animals. The animals you "saved" mostly went to someone else's plate; the ones you actually spared were never born at all. Meat Piety does that math, all of it, and tells you the truth. The truth turns out to be enough.
+SEE YOUR IMPACT, ANIMAL BY ANIMAL
+Chickens, pigs, cows, fish, turkeys, hens, dairy cows: watch the count climb for each one. Meat Piety counts the litters that were never bred, the breeding animals who were never born, and the male chicks and calves who never had to be. Every number is whole lives, and every one is yours.
 
-Pick the day you stopped. The ledger counts from there and keeps counting.
+WATCH THE MARKET MOVE
+Your choice is a vote with your wallet. See how much meat you didn't buy, how much money stayed in your pocket (in your own currency, at live prices), and how you nudged prices and production.
 
-WHAT IT FOLLOWS
+FEEL THE PLANET BREATHE
+Track the greenhouse gas you didn't emit, the land you didn't clear, and the water you didn't use. It's translated into things you can picture: kilometres of driving, hectares of forest, Olympic swimming pools.
 
-The market. What you didn't buy, at live prices in your own currency. The price you pushed down. The meat that went to someone else because of it.
+MEASURE YOUR INFLUENCE
+Link your Bluesky, Mastodon, YouTube, TikTok, Instagram or Facebook account, and see how far your example reaches and how many animals the people you inspire are sparing too.
 
-The animals. Not fractions of chickens: whole lives never begun. Every litter and clutch that didn't happen. The breeding animals who were never born, and the children they never had. The male chicks who were never hatched to be ground up. The calves who were never sent to veal. And the breeders culled early when prices fall, which the ledger counts honestly as extra slaughter before it gets better.
+JOIN THE MOVEMENT
+See what every vegan and vegetarian on Earth is achieving together, and where it's heading. Projections show your impact in 1, 5, 10 and 25 years, and how the world's farm herds change as more people join you.
 
-The farms. Low prices close small farms first. So your abstention also moves the animals still being bred into factory barns. Meat Piety counts that too, because it happened.
+CELEBRATE MILESTONES
+Your first whole pig spared. The day you outlived a broiler chicken. A thousand pounds of meat never bought. Meat Piety lets you know when you hit them, quietly, while you're away.
 
-The land. Emissions, cleared land and water spared, after subtracting the tofu you ate instead. Plus the soy those animals would have eaten, which, it turns out, was most of the world's soy.
+NUMBERS YOU CAN TRUST
+Built on real data from the UN, USDA, FAOSTAT, the U.S. Bureau of Labor Statistics and peer-reviewed research. Meat Piety models how markets actually respond, so your number is honest, and it's still remarkable.
 
-The future. Herds projected against UN population curves. How long until they halve. What would be left if farming stopped: wild junglefowl, boar, mallards, the last free bison.
+BEAUTIFULLY MADE
+A striking, scrolling infographic with parallax motion and living typography. It's dark, elegant and calm, a pleasure to open every day.
 
-YOUR REACH
+PRIVATE BY DEFAULT
+No account. No ads. No tracking. Your data stays on your device.
 
-Add your Bluesky, Mastodon, YouTube, TikTok, Instagram or Facebook handle and Meat Piety estimates who you've moved, and what they've spared. It doesn't guess. No handles, no chapter.
-
-THE WORLD
-
-Every vegan and vegetarian alive, run through the same model. Meat is cheaper because of them. Some animals don't exist because of them. Both are true.
-
-THE BISON
-
-One line runs backward. Ranching is most of why bison still exist; fewer eaten means fewer bred, not fewer killed. Every other line in the ledger is a rescue. That one's a eulogy.
-
-HONEST, ON PURPOSE
-
-Every number has a source: FAOSTAT, USDA, the Bureau of Labor Statistics, UN population projections, Poore & Nemecek, Sentience Institute, IUCN. Uncertain figures come with ranges. What the model can't count, it lists out loud.
-
-QUIET
-
-Milestones arrive only when you're not looking: your first whole pig, the day you outlived a broiler chicken. Opening the app never pings you.
-
-PRIVATE
-
-No account. No ads. No analytics. Your start date stays on your phone.
-
-Monochrome, unhurried, and a little grim. A calculator that takes the numbers as seriously as you took the decision.
+Start your ledger today. Every day you add to it counts.
 ~~~
 
 ## Category and tags
