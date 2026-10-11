@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meat Piety — Privacy Policy</title>
+<!-- Generated from PRIVACY.md at the repository root; edit that and regenerate. -->
+<style>
+body{margin:0;background:#0D120E;color:#EDE6D6;font:16px/1.6 system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 16px 64px}
+h1,h2{font-weight:600;color:#EDE6D6}h2{margin-top:2em;color:#A8C69A}
+a{color:#A8C69A}code{background:#141B16;padding:0 4px;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14px}
+th,td{border:1px solid #2C372F;padding:8px;text-align:left;vertical-align:top}th{color:#9AA595}
+</style>
+</head>
+<body><main>
+<h1>Privacy Policy — Meat Piety</h1>
+<p>Effective 11 October 2026. Applies to the Meat Piety Android app (<code>com.hereliesaz.meatpiety</code>) and the Meat Piety web app.</p>
+<p>Meat Piety has no accounts, no ads, no analytics and no tracking. It does not sell, rent or share personal data.</p>
+<h2>What stays on your device</h2>
+<p>These are stored only on your device, in Android app storage or browser local storage:</p>
+<ul><li>the date you started and your diet (vegan or vegetarian);</li><li>for background notifications: - which milestones you&#x27;ve already reached; - the number of people your linked accounts are estimated to influence; - your currency and exchange rate.</li></ul>
+<p>On the web, a cached schedule of upcoming milestones is also kept.</p>
+<p>Uninstalling the app, or clearing the site&#x27;s data, deletes all of it. None of it is sent anywhere.</p>
+<h2>What leaves your device</h2>
+<p>The app asks Meat Piety&#x27;s data service (<code>meatpiety.hereliesaz.workers.dev</code>, run on Cloudflare) for three things:</p>
+<table><tr><th>Request</th><th>What it sends</th><th>Why</th></tr><tr><td>Retail prices</td><td>nothing about you</td><td>to price the ledger</td></tr><tr><td>Exchange rate</td><td>your currency code, or nothing (the service then guesses your country from your connection)</td><td>to show money in your currency</td></tr><tr><td>Follower count</td><td>the platform and the handle you typed</td><td>to estimate your reach</td></tr></table>
+<ul><li><strong>Handles:</strong> they are only looked up if you type them in. The app keeps them in memory while it&#x27;s open and does not save them.</li><li><strong>Third parties:</strong> to answer a follower lookup, the data service asks that platform (Bluesky, Mastodon, YouTube, TikTok, Instagram or Facebook) for the public profile of the handle you entered. Prices come from the U.S. Bureau of Labor Statistics, and exchange rates from open.er-api.com. Those services see a request from the data service, not from you.</li><li><strong>Caching:</strong> answers are cached for up to 24 hours so repeated lookups don&#x27;t hit the platforms again. The cache holds the public follower count for a handle, not who asked for it.</li><li><strong>Cloudflare:</strong> like any web service, it processes your IP address to deliver the response. Meat Piety does not log it or keep it.</li></ul>
+<h2>Notifications</h2>
+<p>Milestone notifications are created on your device: by Android&#x27;s background scheduler, or by the browser&#x27;s service worker for an installed web app. No push service or server is involved. You can turn them off in your device or browser settings.</p>
+<h2>Permissions (Android)</h2>
+<ul><li><strong>Internet:</strong> to fetch prices, exchange rates and follower counts.</li><li><strong>Notifications:</strong> to tell you about milestones while you&#x27;re away. This is optional.</li></ul>
+<h2>Children</h2>
+<p>Meat Piety is not directed at children under 13 and collects no personal information from anyone.</p>
+<h2>Changes</h2>
+<p>Changes to this policy are published here, with a new effective date.</p>
+<h2>Contact</h2>
+<p>Questions: open an issue at <a href="https://github.com/HereLiesAz/MeatPiety/issues">https://github.com/HereLiesAz/MeatPiety/issues</a>.</p>
+</main></body>
+</html>
