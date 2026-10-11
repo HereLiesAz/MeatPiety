@@ -7,11 +7,12 @@ import kotlin.math.pow
 /*
  * Two long views built on the same market model as the ledger.
  *
- * Herd outlook: the potential market grows with population and income
- * ([MARKET_GROWTH]); abstainers grow at a chosen scenario rate and take a
- * share s(t) of it. In the long-run equilibrium the herd scales as
- * [(1 + g)^t · (1 − s(t)) / (1 − s0)]^(es / (es + ed)) relative to today, and
- * the price as the same base to 1 / (es + ed). A constant-elasticity market
+ * Herd outlook: the potential market follows world population (UN WPP 2024
+ * medium variant) times per-capita intake ([marketFactor]); abstainers grow at
+ * a chosen scenario rate and take a share s(t) of that population. In the
+ * long-run equilibrium the herd scales as
+ * [marketFactor(t) · (1 − s(t)) / (1 − s0)]^(es / (es + ed)) relative to today,
+ * and the price as the same base to 1 / (es + ed). A constant-elasticity market
  * shrinks but never reaches zero, so the model gives a trajectory (when the
  * herd halves, what is left in 50 and 100 years), not an extinction date. What
  * would outlast farming is the non-commercial reservoir: wild ancestors,
@@ -67,12 +68,6 @@ internal val RESERVOIRS: Map<String, Pair<String, Double?>> = mapOf(
 /** Traill, Bradshaw & Brook 2007: median minimum viable population, 4,169. */
 internal const val MINIMUM_VIABLE = 4_169.0
 
-// Global meat consumption growth from population and income: OECD-FAO
-// Agricultural Outlook 2023–2032 projects ~12% over the decade (~1.1%/yr).
-internal const val MARKET_GROWTH = 0.011
-// World population growth, ~0.8%/yr (UN World Population Prospects 2024).
-internal const val POPULATION_GROWTH = 0.008
-
 data class HerdOutlook(
     val species: Species,
     val herdNow: Double,
@@ -93,13 +88,13 @@ data class HerdOutlook(
 }
 
 private fun Species.abstainerShare(years: Int, growth: Double): Double {
-    val a0 = (if (requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE).toDouble() / WORLD_POPULATION
-    return (a0 * ((1 + growth) / (1 + POPULATION_GROWTH)).pow(years)).coerceIn(0.0, 0.99)
+    val abstainers = (if (requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * (1 + growth).pow(years)
+    return (abstainers / worldPopulation(currentYear() + years)).coerceIn(0.0, 0.99)
 }
 
 /** ln of demand at year t relative to today. */
 private fun Species.lnDemand(t: Int, growth: Double) =
-    t * ln(1 + MARKET_GROWTH) + ln(1 - abstainerShare(t, growth)) - ln(1 - abstainerShare(0, growth))
+    ln(marketFactor(t.toDouble())) + ln(1 - abstainerShare(t, growth)) - ln(1 - abstainerShare(0, growth))
 
 fun herdOutlook(growth: Double = DEFAULT_GROWTH, horizon: Int = 300): List<HerdOutlook> =
     SPECIES.mapNotNull { s ->

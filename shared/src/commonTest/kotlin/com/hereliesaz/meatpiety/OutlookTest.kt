@@ -40,3 +40,21 @@ class OutlookTest {
         assertTrue(o.factoryShareIn100!! > o.factoryShareNow!!)
     }
 }
+
+class PopulationTest {
+    @Test
+    fun followsTheUnMediumVariant() {
+        kotlin.test.assertEquals(9.66e9, worldPopulation(2050.0), 1.0)
+        kotlin.test.assertEquals(9.82e9, worldPopulation(2055.0), 1e6)
+        // Peaks in the 2080s, then declines; flat beyond 2100.
+        assertTrue(worldPopulation(2085.0) > worldPopulation(2100.0))
+        kotlin.test.assertEquals(worldPopulation(2100.0), worldPopulation(2300.0))
+    }
+
+    @Test
+    fun marketGrowsWithPopulationAndIntake() {
+        assertTrue(marketFactor(25.0) > 1.0)
+        assertTrue(pastMarketFactor(3650) < 1.0)
+        kotlin.test.assertEquals(1.0, pastMarketFactor(0))
+    }
+}

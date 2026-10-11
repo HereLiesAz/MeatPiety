@@ -172,4 +172,4 @@ internal fun Species.eatenBy(diet: Diet) = diet == Diet.VEGAN || !requiresVegani
 // in India. Order-of-magnitude, and labelled so in the app.
 internal const val VEGANS_WORLDWIDE = 100_000_000L
 internal const val VEGETARIANS_WORLDWIDE = 800_000_000L
-internal const val WORLD_POPULATION = 8_100_000_000L
+

@@ -85,7 +85,9 @@ barns" waits for gestation; wild catch is quota-bound, so only the farmed
 share of seafood responds, and the feed fish behind it are counted; less
 dairy means more beef cattle (~20% of beef is dairy-herd); the footprint is
 net of protein-matched tofu; supply responses carry a ±0.1 range; the herd
-outlook grows the market ~1.1%/yr (OECD-FAO) and offers flat, 1% and 3%
+outlook, projections and ledgers size the market by world population (UN WPP 2024
+medium variant: peak ~10.3 bn in the 2080s; `Population.kt`) times per-capita
+intake growing ~0.2%/yr (OECD-FAO), and offers flat, 1% and 3%
 abstainer scenarios instead of an extinction date. Not counted, and said so
 in the app: trade, subsidies, herd cycles, bycatch, crop deaths, wild-animal
 effects of land use, and differences in capacity to suffer.

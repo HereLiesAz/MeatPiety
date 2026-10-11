@@ -126,7 +126,8 @@ class WholeAnimalTest {
         val a = cow(300).fewerInBarns!!
         val b = cow(3650).fewerInBarns!!
         // 300 days is 17 days past gestation (283); ten years caps at slaughter age (540).
-        assertEquals(a / 17 * 540, b, b * 1e-9)
+        // Tolerance covers the slightly different market size each span averages over.
+        assertEquals(a / 17 * 540, b, b * 1e-4)
     }
 
     @Test
@@ -176,7 +177,7 @@ class ProjectionTest {
     fun projectionsGrowWithTime() {
         val p = projections(365, Diet.VEGAN)
         assertTrue(p.zipWithNext().all { (a, b) -> b.personal.netSpared > a.personal.netSpared && b.abstainers > a.abstainers })
-        assertEquals(personalLayer(365 * 2, Diet.VEGAN).netSpared, p.first().personal.netSpared, 1e-9)
+        assertEquals(personalLayer(365 * 2, Diet.VEGAN).netSpared, p.first().personal.netSpared, 1e-3)
     }
 }
 

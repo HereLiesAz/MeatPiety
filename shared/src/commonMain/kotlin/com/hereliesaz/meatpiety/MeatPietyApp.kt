@@ -259,7 +259,7 @@ private fun LedgerScreen() {
             item(key = "extinct-head") {
                 ChapterHead(
                     "†", "How long they last",
-                    "Meat demand grows ~1.1% a year with population and income (OECD-FAO); abstainers take a growing share under " +
+                    "The market follows world population (UN projections: a peak near 10.3 billion in the 2080s) and slowly rising meat per person (OECD-FAO); abstainers take a growing share under " +
                         "the scenario above. The herd follows. A market never prices a species to zero, so this gives the herd's " +
                         "path, not an extinction date — and what would outlast farming if people stopped keeping them.",
                 )

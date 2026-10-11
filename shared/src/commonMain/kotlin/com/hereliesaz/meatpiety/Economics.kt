@@ -85,7 +85,7 @@ data class Layer(
 }
 
 /** Today's global market for a species, in its retail unit (already net of today's abstainers). */
-internal fun Species.globalMarketUnitsPerYear() = WORLD_POPULATION * usPerCapita * worldToUsRatio
+internal fun Species.globalMarketUnitsPerYear() = worldPopulation(currentYear()) * usPerCapita * worldToUsRatio
 
 // Fish and shellfish have no breeding model; aquaculture stocking responds
 // within about a season.
@@ -120,8 +120,10 @@ internal fun impact(
     baseline: Baseline = Baseline.MARGINAL,
     worldScope: Boolean = false,
     cefDelta: Double = 0.0,
+    marketScale: Double = 1.0,
 ): Impact {
-    val today = species.globalMarketUnitsPerYear()
+    // Population and per-capita intake move the market over time (Population.kt).
+    val today = species.globalMarketUnitsPerYear() * marketScale
     val market = if (baseline == Baseline.COUNTERFACTUAL) today + unitsPerYear else today
     val shift = (unitsPerYear / market).coerceIn(0.0, 0.99)
     // Wild catch is quota-bound: only the farmed share answers demand.
@@ -209,10 +211,16 @@ internal fun layerOf(impacts: List<Impact>): Layer {
 }
 
 /** Your own abstention, eating as a standard U.S. diet otherwise would. */
-fun personalLayer(days: Int, diet: Diet, prices: Map<String, Double> = emptyMap(), cefDelta: Double = 0.0): Layer {
+fun personalLayer(
+    days: Int,
+    diet: Diet,
+    prices: Map<String, Double> = emptyMap(),
+    cefDelta: Double = 0.0,
+    marketScale: Double = pastMarketFactor(days),
+): Layer {
     val years = days / 365.0
     return layerOf(SPECIES.filter { it.eatenBy(diet) }.map {
-        impact(it, it.usPerCapita, years, prices[it.name] ?: it.usdPrice, cefDelta = cefDelta)
+        impact(it, it.usPerCapita, years, prices[it.name] ?: it.usdPrice, cefDelta = cefDelta, marketScale = marketScale)
     })
 }
 
@@ -228,7 +236,10 @@ fun personalRange(days: Int, diet: Diet, prices: Map<String, Double> = emptyMap(
 fun influenceLayer(people: Double, days: Int, diet: Diet, prices: Map<String, Double> = emptyMap()): Layer {
     val years = days / 365.0 / 2
     return layerOf(SPECIES.filter { it.eatenBy(diet) }.map {
-        impact(it, people * it.usPerCapita * it.worldToUsRatio, years, prices[it.name] ?: it.usdPrice, worldScope = true)
+        impact(
+            it, people * it.usPerCapita * it.worldToUsRatio, years, prices[it.name] ?: it.usdPrice,
+            worldScope = true, marketScale = pastMarketFactor(days / 2),
+        )
     })
 }
 
@@ -237,13 +248,18 @@ fun influenceLayer(people: Double, days: Int, diet: Diet, prices: Map<String, Do
  * against the market they would have bought into: the price change says how
  * much cheaper today is than a world without them.
  */
-fun worldLayer(days: Int, prices: Map<String, Double> = emptyMap(), growth: Double = 1.0): Layer {
+fun worldLayer(
+    days: Int,
+    prices: Map<String, Double> = emptyMap(),
+    growth: Double = 1.0,
+    marketScale: Double = pastMarketFactor(days),
+): Layer {
     val years = days / 365.0
     return layerOf(SPECIES.map {
         val abstainers = (if (it.requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * growth
         impact(
             it, abstainers * it.usPerCapita * it.worldToUsRatio, years, prices[it.name] ?: it.usdPrice,
-            baseline = Baseline.COUNTERFACTUAL, worldScope = true,
+            baseline = Baseline.COUNTERFACTUAL, worldScope = true, marketScale = marketScale,
         )
     })
 }
@@ -264,9 +280,11 @@ fun projections(days: Int, diet: Diet, prices: Map<String, Double> = emptyMap(),
         val growth = kotlin.math.exp(h * kotlin.math.ln(1 + growthRate))
         Projection(
             yearsAhead = h,
-            personal = personalLayer(days + h * 365, diet, prices),
-            // World snapshot h years out: one year of abstention at that year's headcount.
-            world = worldLayer(365, prices, growth),
+            // Your span runs from your start date to h years out.
+            personal = personalLayer(days + h * 365, diet, prices, marketScale = (pastMarketFactor(days) * days + (1 + marketFactor(h.toDouble())) / 2 * h * 365) / (days + h * 365).coerceAtLeast(1)),
+            // World snapshot h years out: one year of abstention at that year's
+            // headcount, in that year's market (UN WPP 2024 population).
+            world = worldLayer(365, prices, growth, marketScale = marketFactor(h.toDouble())),
             abstainers = (VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * growth,
         )
     }
