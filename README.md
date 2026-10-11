@@ -1,14 +1,55 @@
 # Meat Piety
 
 A calculator for vegans and vegetarians: enter how many days you've lived
-that way and it tallies the animals a standard U.S. diet would otherwise
-have put through the meat, dairy, and egg industries. It also projects that
-math onto your Facebook friends and the rest of the world's vegans and
-vegetarians — and it keeps a separate, backward line for buffalo, whose
-numbers survive on ranching demand rather than despite it.
+that way and it works out what that did to each animal's market and
+population — meat not bought, the price drop it causes, how much of the slack
+cheaper prices tempt someone else into eating, the animals actually never
+raised, the breeders retired and births never needed. It runs the same model
+for the people you've influenced (only once you link a social account) and
+for the world's vegans and vegetarians, and keeps a backward line for buffalo,
+whose numbers survive on ranching demand rather than despite it.
 
 The calculator itself — `shared/src/commonMain` — is Kotlin Multiplatform
 Compose, built once and run on both Android and web.
+
+## Model
+
+`shared/src/commonMain`:
+
+- `Species.kt` — per-animal data: retail yield, U.S. and world per-capita
+  consumption, price, demand/supply elasticities, producer margin, and
+  reproduction (birthing size, offspring per breeder, gestation, slaughter age).
+- `Economics.kt` — one global constant-elasticity market per species. A layer
+  removes demand; the new equilibrium gives the price change, rebound
+  consumption, net animals not raised, breeders not kept, birthings not
+  needed, and producer revenue lost.
+- `Influence.kt` — linked handles → follower counts → reached (organic reach
+  per platform, overlap-discounted) → persuaded → still abstaining (16%).
+  No linked account with a readable count, no influence chapter.
+- `Money.kt` — prices are U.S. figures in USD, converted to the user's
+  national currency (device locale on Android, visitor country on web).
+- `Milestones.kt` — notices for thresholds crossed; `Notifier` posts each
+  once as a system notification (Android shade, browser Notification API).
+- `LiveData.kt` — client for the worker; everything falls back to the
+  built-in figures offline.
+
+## Worker
+
+`worker/` is a Cloudflare Worker at `meatpiety.hereliesaz.workers.dev`,
+caching each answer for a day:
+
+- `/market` — BLS average retail prices (USD).
+- `/fx` — USD exchange rate (open.er-api.com).
+- `/followers?platform=&handle=` — Bluesky and Mastodon via their public
+  APIs, YouTube via the Data API (`YOUTUBE_KEY` secret), TikTok, Instagram
+  and Facebook by reading public profile pages. Scraped platforms can block
+  the worker or hide counts; the app then leaves that account out. X is not
+  supported.
+
+~~~
+cd worker && npx wrangler deploy
+npm test
+~~~
 
 ## Modules
 

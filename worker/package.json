@@ -1,0 +1,9 @@
+{
+  "name": "meatpiety-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.js"
+  }
+}
