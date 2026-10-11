@@ -20,14 +20,27 @@ class EconomicsTest {
     }
 
     @Test
-    fun netIsGrossTimesSupplyShareForSmallShocks() {
-        // For a marginal buyer, net = gross · es / (es + ed); the rest is rebound.
-        personalLayer(365, Diet.VEGAN).impacts.forEach {
+    fun netIsGrossTimesSupplyShareAfterTheLag() {
+        // For a marginal buyer, the long-run cut is gross · es / (es + ed), and it
+        // only reaches slaughter once the supply lag has passed; the rest is rebound.
+        val days = 3650
+        personalLayer(days, Diet.VEGAN).impacts.forEach {
             val s = it.species
             val share = s.supplyElasticity / (s.supplyElasticity + s.demandElasticity)
-            assertEquals(it.grossAnimals * share, it.netAnimals, it.grossAnimals * 1e-4)
+            val lag = s.biology?.supplyLagDays ?: 90
+            val expected = it.grossAnimals / days * share * (days - lag)
+            assertEquals(expected, it.netAnimals, expected * 1e-4)
             assertTrue(it.reboundAnimals > 0)
+            assertTrue(it.neverBred >= it.netAnimals)
         }
+    }
+
+    @Test
+    fun nothingIsSparedBeforeProducersCanRespond() {
+        val chicken = personalLayer(30, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        assertEquals(0.0, chicken.netAnimals)
+        assertEquals(chicken.grossAnimals, chicken.bredAnyway, 1e-9)
+        assertTrue(chicken.shortRunPriceChange < chicken.priceChange)
     }
 
     @Test
@@ -104,10 +117,9 @@ class WholeAnimalTest {
     @Test
     fun stillAliveIsThePipelineCappedAtSlaughterAge() {
         val year = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        assertEquals(year.netAnimals * 47 / 365.0, year.stillAlive!!, 1e-9)
-        // Before one slaughter age has passed, everything spared so far is still in the pipeline.
         val early = personalLayer(20, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        assertEquals(early.netAnimals, early.stillAlive!!, 1e-9)
+        // A day's share per elapsed day, capped at slaughter age (47 days).
+        assertEquals(early.stillAlive!! / 20 * 47, year.stillAlive!!, 1e-9)
     }
 }
 

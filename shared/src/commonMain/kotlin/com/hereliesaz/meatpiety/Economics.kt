@@ -5,29 +5,40 @@ import kotlin.math.ln
 
 /**
  * One layer of abstention (you, the people you've influenced, the world) and
- * what it does to one species' market and population.
+ * what it does to one species' market and population, as a chain in time:
  *
- * Model: a single global market per species with constant-elasticity supply
- * and demand. Removing [grossUnits] of demand shifts the demand curve by the
- * share [demandShift]; the price falls until other buyers pick up part of the
- * slack ([reboundUnits]); producers cut the rest ([netUnits]). Fewer animals
- * raised means fewer breeders kept and fewer births, and it takes
- * [Biology.supplyLagDays] for a breeding cut to reach market.
+ * 1. You stop buying. The animals for that demand were already bred, so for
+ *    the first [Biology.supplyLagDays] they still come to market ([bredAnyway]).
+ * 2. With supply fixed, the surplus can only clear by price: the short-run
+ *    drop [shortRunPriceChange] uses demand elasticity alone, and other
+ *    buyers take those animals ([reboundAnimals]).
+ * 3. The lower price tells producers to cut breeding. Births fall after one
+ *    gestation ([neverBred], [birthingsNotNeeded]); the breeding herd shrinks
+ *    at once ([breedersNotKept]).
+ * 4. Slaughter falls after gestation + time to slaughter ([netAnimals],
+ *    fewer slaughtered), and the price settles at the long-run equilibrium
+ *    [priceChange] with supply responding too.
+ *
+ * Model: one global constant-elasticity market per species. Long run,
+ * ln P' = ln(1 − shift) / (es + ed), ln Q' = es · ln P'; short run, es = 0.
  */
 data class Impact(
     val species: Species,
     val grossUnits: Double,
     val grossAnimals: Double,
     val demandShift: Double,
+    val bredAnyway: Double,
+    val shortRunPriceChange: Double,
     val priceChange: Double,
+    val neverBred: Double,
     val netUnits: Double,
+    /** Fewer slaughtered so far. */
     val netAnimals: Double,
     val reboundUnits: Double,
     val breedersNotKept: Double?,
-    // Animals already born for your share when your demand left. Producers
-    // can only cut breeding, so these are slaughtered later than scheduled
-    // while the cut works through; at any moment that is a day's worth of
-    // your share for each day of the pipeline elapsed, up to slaughter age.
+    // Animals already born for your share when your demand left, whose
+    // slaughter is pushed back while the breeding cut works through: a day's
+    // share per elapsed day, up to slaughter age.
     val stillAlive: Double?,
     val birthingsNotNeeded: Double?,
     val producerRevenueLostUsd: Double,
@@ -39,13 +50,18 @@ data class Impact(
 }
 
 data class Layer(val impacts: List<Impact>) {
-    /** Net fewer animals slaughtered, excluding the backward (bred-for-demand) lines. */
+    /** Fewer animals slaughtered so far, excluding the backward (bred-for-demand) lines. */
     val netSpared get() = impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.netAnimals }
     val grossSpared get() = impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.grossAnimals }
 }
 
 /** Global market for a species, in its retail unit, absent anyone abstaining. */
 internal fun Species.globalMarketUnitsPerYear() = WORLD_POPULATION * usPerCapita * worldToUsRatio
+
+// Fish and shellfish have no breeding model; catch and aquaculture stocking
+// respond within about a season.
+private const val SEAFOOD_LAG_DAYS = 90
+private const val SEAFOOD_GESTATION_DAYS = 0
 
 /**
  * Removes [unitsPerYear] of annual demand for [species] over [years] and works
@@ -56,31 +72,37 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
     val shift = (unitsPerYear / market).coerceIn(0.0, 0.99)
     val es = species.supplyElasticity
     val ed = species.demandElasticity
-    // Constant-elasticity equilibrium after demand shrinks by `shift`:
-    // ln P' = ln(1 - shift) / (es + ed), ln Q' = es · ln P'.
     val lnPrice = ln(1 - shift) / (es + ed)
     val priceChange = exp(lnPrice) - 1
     val quantityChange = exp(es * lnPrice) - 1
-    val grossUnits = unitsPerYear * years
-    val netUnits = -quantityChange * market * years
-    val netAnimals = netUnits / species.unitsPerAnimal
     val bio = species.biology
+    val days = years * 365.0
+    val lag = (bio?.supplyLagDays ?: SEAFOOD_LAG_DAYS).toDouble()
+    val gestation = (bio?.gestationDays ?: SEAFOOD_GESTATION_DAYS).toDouble()
+    val grossUnits = unitsPerYear * years
+    val grossAnimals = grossUnits / species.unitsPerAnimal
+    // Long-run cut in animals per day, once breeding has responded.
+    val cutPerDay = -quantityChange * market / 365.0 / species.unitsPerAnimal
+    val netAnimals = cutPerDay * (days - lag).coerceAtLeast(0.0)
+    val neverBred = cutPerDay * (days - gestation).coerceAtLeast(0.0)
     val revenueBefore = market * usdPrice
     val revenueAfter = market * (1 + quantityChange) * usdPrice * (1 + priceChange)
     return Impact(
         species = species,
         grossUnits = grossUnits,
-        grossAnimals = grossUnits / species.unitsPerAnimal,
+        grossAnimals = grossAnimals,
         demandShift = shift,
+        bredAnyway = if (days > 0) grossAnimals / days * minOf(days, lag) else 0.0,
+        shortRunPriceChange = exp(ln(1 - shift) / ed) - 1,
         priceChange = priceChange,
-        netUnits = netUnits,
+        neverBred = neverBred,
+        netUnits = netAnimals * species.unitsPerAnimal,
         netAnimals = netAnimals,
-        reboundUnits = grossUnits - netUnits,
-        // Breeders are a standing herd: an annual rate of animals not raised,
-        // divided by what one breeder produces a year.
-        breedersNotKept = bio?.let { if (years > 0) netAnimals / years / it.offspringPerBreederYear else 0.0 },
-        stillAlive = bio?.let { if (years > 0) netAnimals / (years * 365.0) * minOf(years * 365.0, it.slaughterAgeDays.toDouble()) else 0.0 },
-        birthingsNotNeeded = bio?.let { netAnimals / it.perBirthing },
+        reboundUnits = grossUnits - netAnimals * species.unitsPerAnimal,
+        // The breeding herd is cut as soon as the price signal arrives.
+        breedersNotKept = bio?.let { if (days > 0) cutPerDay * 365.0 / it.offspringPerBreederYear else 0.0 },
+        stillAlive = bio?.let { cutPerDay * minOf(days, it.slaughterAgeDays.toDouble()) },
+        birthingsNotNeeded = bio?.let { neverBred / it.perBirthing },
         producerRevenueLostUsd = (revenueBefore - revenueAfter) * years,
         belowBreakeven = -priceChange >= species.breakevenDrop,
         usdPrice = usdPrice,

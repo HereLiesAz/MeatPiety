@@ -425,15 +425,22 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
-            Counter(impact.netAnimals, MaterialTheme.typography.bodyLarge, colour) {
+            Counter(impact.neverBred, MaterialTheme.typography.bodyLarge, colour) {
                 "${wholeAnimals(it, days)} never bred"
             }
         }
         LogBar(impact.grossAnimals, max, colour)
+        // The chain, each step feeding the next.
+        val i = impact
+        val bio = i.species.biology
         Text(
-            "${format(impact.grossUnits)} ${impact.species.unit} unbought · ${format(impact.grossAnimals)} animals' worth · " +
-                "${format(impact.reboundAnimals)} raised anyway for cheaper-meat buyers" +
-                (impact.stillAlive?.let { " · ${format(it)} still alive, slaughter postponed" } ?: ""),
+            "You skipped ${format(i.grossUnits)} ${i.species.unit}, ${format(i.grossAnimals)} animals' worth. " +
+                "${format(i.bredAnyway)} were already bred → the surplus dropped the price ${formatTiny(i.shortRunPriceChange * 100)}% " +
+                "→ others bought ${format(i.reboundAnimals)} of them cheap → farms cut breeding" +
+                (bio?.let { " (${format(i.birthingsNotNeeded ?: 0.0)} ${it.birthing}s not needed)" } ?: "") +
+                " → ${format(i.netAnimals)} fewer slaughtered so far" +
+                (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
+                ". Price settles ${formatTiny(i.priceChange * 100)}%.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }

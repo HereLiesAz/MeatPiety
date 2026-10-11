@@ -19,7 +19,10 @@ Compose, built once and run on both Android and web.
 - `Species.kt` — per-animal data: retail yield, U.S. and world per-capita
   consumption, price, demand/supply elasticities, producer margin, and
   reproduction (birthing size, offspring per breeder, gestation, slaughter age).
-- `Economics.kt` — one global constant-elasticity market per species. A layer
+- `Economics.kt` — a causal chain in time: skipped purchases of animals already
+  bred → short-run price drop (supply fixed) → others buy them → breeding cut →
+  births fall after gestation → slaughter falls after gestation + slaughter age →
+  long-run price. One global constant-elasticity market per species. A layer
   removes demand; the new equilibrium gives the price change, rebound
   consumption, net animals not raised, breeders not kept, birthings not
   needed, producer revenue lost, and animals still alive: those already born
