@@ -34,6 +34,14 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
+            implementation("io.ktor:ktor-client-core:3.5.2")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+        }
+        androidMain.dependencies {
+            implementation("io.ktor:ktor-client-okhttp:3.5.2")
+        }
+        wasmJsMain.dependencies {
+            implementation("io.ktor:ktor-client-js:3.5.2")
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -1,0 +1,6 @@
+# MeatPiety data service: live prices, exchange rates, follower counts.
+# Deploy: npx wrangler deploy   (served at meatpiety.hereliesaz.workers.dev)
+# Optional secrets: npx wrangler secret put YOUTUBE_KEY / BLS_KEY
+name = "meatpiety"
+main = "src/index.js"
+compatibility_date = "2026-09-01"

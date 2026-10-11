@@ -12,12 +12,16 @@ internal fun formatPercent(fraction: Double): String {
     return "$sign${magnitude / 10}.${magnitude % 10}%"
 }
 
-internal fun formatPrice(price: Double): String {
-    val cents = kotlin.math.round(price * 100).toLong()
-    val wholePart = cents / 100
-    val centPart = abs(cents % 100)
-    val centStr = if (centPart < 10) "0$centPart" else "$centPart"
-    return "$$wholePart.$centStr"
+/** Signed value in plain or scientific notation; one person's share of a world market is tiny. */
+internal fun formatTiny(x: Double): String {
+    if (x == 0.0) return "0"
+    val sign = if (x < 0) "-" else "+"
+    val n = abs(x)
+    if (n >= 0.01) return sign + formatOneDecimal(n)
+    var exp = 0
+    var m = n
+    while (m < 1) { m *= 10; exp-- }
+    return "$sign${formatOneDecimal(m)}×10^$exp"
 }
 
 internal fun format(count: Double): String {

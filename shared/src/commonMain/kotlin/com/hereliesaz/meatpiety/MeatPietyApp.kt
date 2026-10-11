@@ -1,6 +1,7 @@
 package com.hereliesaz.meatpiety
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,13 +60,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 import kotlin.math.log10
+import kotlinx.coroutines.delay
 
 /*
  * Layout: scrollytelling chapters closing on a bento recap.
  *   Hero (parallax field, interactive variable title) → inputs →
- *   chapters (yours, your circle, the world), each a counting headline over
- *   log-scaled bars → buffalo eulogy (kinetic quote) → market → precedent
- *   timeline with parallax years → bento recap.
+ *   accounts → chapters (yours, your reach [only with a linked account], the
+ *   world), each a counting headline over log-scaled bars → buffalo eulogy →
+ *   market → the animal (breeding) → precedent timeline → bento recap.
+ *   Milestone notices slide up from the bottom as thresholds are crossed.
  * All motion honours LocalReducedMotion.
  */
 
@@ -82,21 +88,30 @@ private val MaxColumn = 720.dp
 
 private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(horizontal = Gutter)
 
-private fun List<SparedAnimal>.sparedTotal() = filterNot { it.existsBecauseOfDemand }.sumOf { it.count }
-
 @Composable
 private fun LedgerScreen() {
     var daysText by remember { mutableStateOf("365") }
-    var friendsText by remember { mutableStateOf("0") }
     var diet by remember { mutableStateOf(Diet.VEGAN) }
+    val handles = remember { mutableStateMapOf<Platform, String>() }
+    val lookups = remember { mutableStateMapOf<Platform, FollowerLookup>() }
+    var prices by remember { mutableStateOf(emptyMap<String, Double>()) }
+    var money by remember { mutableStateOf(Money.USD) }
+
+    LaunchedEffect(Unit) {
+        prices = LiveData.prices()
+        LiveData.money()?.let { money = it }
+    }
 
     val days = daysText.toIntOrNull()?.coerceAtLeast(0) ?: 0
-    val friends = friendsText.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val accounts = handles.filterValues { it.isNotBlank() }.map { (p, h) ->
+        LinkedAccount(p, h, lookups[p] ?: FollowerLookup.Pending)
+    }
+    val funnel = influenceFunnel(accounts)
 
-    val personal = remember(days, diet) { animalsSpared(days, diet) }
-    val sphere = remember(personal, friends) { sphereOfInfluence(personal, friends) }
-    val world = remember(days) { worldTally(days) }
-    val market = remember { marketEffects() }
+    val personal = remember(days, diet, prices) { personalLayer(days, diet, prices) }
+    val influence = remember(funnel, days, diet, prices) { funnel?.let { influenceLayer(it.stayed, days, diet, prices) } }
+    val world = remember(days, prices) { worldLayer(days, prices) }
+    val notices = remember(days, personal, influence, world, money) { milestones(days, personal, influence, world, money) }
 
     val state = rememberLazyListState()
     val reduced = LocalReducedMotion.current
@@ -134,61 +149,102 @@ private fun LedgerScreen() {
                             ) { Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian") }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NumberField(daysText, { daysText = it }, "Days lived this way", Modifier.weight(1f))
-                        NumberField(friendsText, { friendsText = it }, "Facebook friends", Modifier.weight(1f))
+                    NumberField(daysText, { daysText = it }, "Days lived this way", Modifier.fillMaxWidth())
+                }
+            }
+            item(key = "accounts") {
+                Column(
+                    Modifier.column().padding(top = 32.dp).reveal(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Eyebrow("Your reach · optional")
+                    Text(
+                        "Add your handles and we'll read your follower counts. Leave them blank and the " +
+                            "influence chapter stays out of the ledger.",
+                        style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+                    )
+                    Platform.entries.forEach { platform ->
+                        HandleField(
+                            platform = platform,
+                            value = handles[platform].orEmpty(),
+                            lookup = lookups[platform],
+                            onChange = {
+                                handles[platform] = it
+                                lookups.remove(platform)
+                            },
+                            onLookup = { lookups[platform] = it },
+                        )
                     }
                 }
             }
 
             chapter(
                 key = "yours", number = "01", title = "Your ledger",
-                caption = "Every one of these is an animal a standard U.S. diet would have put through the system on your behalf.",
-                animals = personal, accent = Piety.Sage,
+                caption = "Measured against a standard U.S. diet. Gross is what you didn't buy; net is what the " +
+                    "market actually stopped raising once cheaper prices tempted someone else.",
+                layer = personal, accent = Piety.Sage, money = money,
             ) {
                 Pictogram(
-                    count = personal.sparedTotal(), cap = 200, color = Piety.Sage,
+                    count = personal.netSpared, cap = 200, color = Piety.Sage,
                     modifier = Modifier.fillMaxWidth().aspectRatio(2f).padding(vertical = 8.dp),
                 )
-                Text("ONE MARK PER ANIMAL, UP TO 200", style = MaterialTheme.typography.labelSmall, color = Piety.Lichen)
+                Text("ONE MARK PER ANIMAL NEVER RAISED, UP TO 200", style = MaterialTheme.typography.labelSmall, color = Piety.Lichen)
+            }
+
+            if (funnel != null && influence != null) {
+                chapter(
+                    key = "circle", number = "02", title = "If your conscience were contagious",
+                    caption = "${format(funnel.followers.toDouble())} followers → ${format(funnel.reached)} who " +
+                        "regularly see you → ${format(funnel.persuaded)} persuaded → ${format(funnel.stayed)} " +
+                        "still at it (84% quit). Each counted at the world-average diet for half your span. " +
+                        "Persuasion rate is a guess, labelled as one.",
+                    layer = influence, accent = Piety.Fern, money = money,
+                ) {
+                    Ripples(
+                        rings = 1 + log10(1.0 + funnel.followers).toInt(), color = Piety.Fern,
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
+                    )
+                }
             }
 
             chapter(
-                key = "circle", number = "02", title = "If your conscience were contagious",
-                caption = "As if all $friends of your friends had done exactly what you did, for exactly as long.",
-                animals = sphere, accent = Piety.Fern,
-            ) {
-                Ripples(
-                    rings = 1 + log10(1.0 + friends).toInt() * 2, color = Piety.Fern,
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
-                )
-            }
-
-            chapter(
-                key = "world", number = "03", title = "Meanwhile, out there",
-                caption = "An estimated ${format(world.veganPopulation.toDouble())} vegans and " +
-                    "${format(world.vegetarianPopulation.toDouble())} vegetarians worldwide, keeping this up " +
-                    "for the same $days days — each counted as if they'd otherwise eaten a U.S. standard diet, " +
-                    "which most of them never would have. Population figures are estimates, not a census.",
-                animals = world.animals, accent = Piety.Sprout,
+                key = "world", number = if (funnel != null) "03" else "02", title = "Meanwhile, out there",
+                caption = "An estimated ${format(VEGANS_WORLDWIDE.toDouble())} vegans and " +
+                    "${format(VEGETARIANS_WORLDWIDE.toDouble())} vegetarians, at the world-average diet, for " +
+                    "the same $days days. At this scale the price falls far enough to matter.",
+                layer = world, accent = Piety.Sprout, money = money,
             )
 
             item(key = "eulogy") { Eulogy(Modifier.column().padding(vertical = 72.dp)) }
 
             item(key = "market-head") {
                 ChapterHead(
-                    "04", "What happens to the price",
-                    "Today's abstainers are already a standing demand shock. Modeled from published " +
-                        "demand and supply elasticities, not observed — nobody's run this experiment at scale.",
+                    if (funnel != null) "04" else "03", "What happens to the price",
+                    "World abstention as a demand shock on one global market per species, modelled from " +
+                        "published elasticities. U.S. retail prices${if (prices.isEmpty()) " (built-in)" else " (live, BLS)"}" +
+                        ", converted to ${money.code}.",
                 )
             }
-            itemsIndexed(market, key = { _, it -> "market-${it.name}" }) { i, effect ->
-                MarketRow(effect, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            itemsIndexed(world.impacts, key = { _, it -> "market-${it.species.name}" }) { i, impact ->
+                MarketRow(impact, personal.impacts.firstOrNull { it.species == impact.species }, money,
+                    Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            }
+
+            item(key = "animal-head") {
+                ChapterHead(
+                    if (funnel != null) "05" else "04", "What happens to the animal",
+                    "Fewer sold means fewer bred. Breeders retired, births never needed, and how long a " +
+                        "breeding decision takes to reach the shelf.",
+                )
+            }
+            itemsIndexed(world.impacts.filter { it.species.biology != null }, key = { _, it -> "bio-${it.species.name}" }) { i, impact ->
+                BiologyRow(impact, personal.impacts.firstOrNull { it.species == impact.species },
+                    Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
             }
 
             item(key = "history-head") {
                 ChapterHead(
-                    "05", "This has happened before",
+                    if (funnel != null) "06" else "05", "This has happened before",
                     "Demand didn't just spare buffalo. It's the reason several species exist at all — " +
                         "and the reason at least one doesn't.",
                 )
@@ -197,9 +253,82 @@ private fun LedgerScreen() {
                 PrecedentRow(p, state, "p-${p.species}", parallax = !reduced)
             }
 
-            item(key = "recap") { Recap(personal, sphere, world, market, Modifier.column().padding(top = 96.dp)) }
+            item(key = "recap") { Recap(personal, influence, world, money, Modifier.column().padding(top = 96.dp)) }
+        }
+        NoticeTray(notices, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp))
+    }
+}
+
+/** Shows each newly crossed milestone for a few seconds, oldest first. */
+@Composable
+private fun NoticeTray(notices: List<Notice>, modifier: Modifier) {
+    val seen = remember { mutableSetOf<String>() }
+    val queue = remember { mutableStateListOf<Notice>() }
+    LaunchedEffect(notices) {
+        notices.filter { seen.add(it.id) }.let { queue.addAll(it) }
+    }
+    val current = queue.firstOrNull()
+    LaunchedEffect(current) {
+        if (current != null) {
+            delay(4_000)
+            queue.remove(current)
         }
     }
+    if (current != null) {
+        val shape = RoundedCornerShape(20.dp)
+        Column(
+            modifier
+                .widthIn(max = MaxColumn)
+                .fillMaxWidth()
+                .background(Piety.Bark, shape)
+                .border(1.dp, Piety.Fern.copy(alpha = 0.5f), shape)
+                .clickable { queue.remove(current) }
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(current.title, style = MaterialTheme.typography.titleMedium, color = Piety.Oat)
+            Text(current.body, style = MaterialTheme.typography.bodySmall, color = Piety.Lichen)
+        }
+    }
+}
+
+/** Handle entry; looks the account up once typing pauses. */
+@Composable
+private fun HandleField(
+    platform: Platform,
+    value: String,
+    lookup: FollowerLookup?,
+    onChange: (String) -> Unit,
+    onLookup: (FollowerLookup) -> Unit,
+) {
+    LaunchedEffect(value) {
+        if (value.isBlank()) return@LaunchedEffect
+        delay(900)
+        onLookup(FollowerLookup.Pending)
+        onLookup(LiveData.followers(platform, value.trim()))
+    }
+    val status = when (lookup) {
+        is FollowerLookup.Found -> "${format(lookup.followers.toDouble())} followers"
+        is FollowerLookup.Failed -> "Couldn't read @${value.trim().removePrefix("@")}: ${lookup.reason}"
+        FollowerLookup.Pending -> "Looking up…"
+        null -> null
+    }
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onChange(it.take(120)) },
+        label = { Text(platform.label) },
+        placeholder = { Text(platform.hint) },
+        supportingText = status?.let { { Text(it, color = if (lookup is FollowerLookup.Failed) Piety.Clay else Piety.Lichen) } },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Piety.Oat),
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Piety.Sage, unfocusedBorderColor = Piety.Rule,
+            focusedLabelColor = Piety.Sage, unfocusedLabelColor = Piety.Lichen, cursorColor = Piety.Sage,
+            focusedContainerColor = Piety.Loam, unfocusedContainerColor = Piety.Loam,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
@@ -282,39 +411,49 @@ private fun LazyListScope.chapter(
     number: String,
     title: String,
     caption: String,
-    animals: List<SparedAnimal>,
+    layer: Layer,
     accent: Color,
+    money: Money,
     figure: (@Composable () -> Unit)? = null,
 ) {
     item(key = "$key-head") { ChapterHead(number, title, caption) }
     item(key = "$key-total") {
         Column(Modifier.column().padding(bottom = 24.dp).reveal(120)) {
-            Counter(animals.sparedTotal(), MaterialTheme.typography.displayLarge, accent) { format(it) }
-            Text("animals spared", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
+            Counter(layer.netSpared, MaterialTheme.typography.displayLarge, accent) { format(it) }
+            Text("animals never raised", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
+            Text(
+                "${format(layer.grossSpared)} not bought · ${money.format(layer.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent",
+                style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+            )
             if (figure != null) {
                 Spacer(Modifier.height(16.dp))
                 figure()
             }
         }
     }
-    val max = animals.maxOfOrNull { abs(it.count) } ?: 0.0
-    itemsIndexed(animals, key = { _, it -> "$key-${it.name}" }) { i, animal ->
-        LedgerRow(animal, max, accent, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+    val max = layer.impacts.maxOfOrNull { abs(it.grossAnimals) } ?: 0.0
+    itemsIndexed(layer.impacts, key = { _, it -> "$key-${it.species.name}" }) { i, impact ->
+        LedgerRow(impact, max, accent, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
     }
 }
 
 @Composable
-private fun LedgerRow(animal: SparedAnimal, max: Double, accent: Color, modifier: Modifier) {
-    val backward = animal.existsBecauseOfDemand
+private fun LedgerRow(impact: Impact, max: Double, accent: Color, modifier: Modifier) {
+    val backward = impact.species.existsBecauseOfDemand
     val colour = if (backward) Piety.Clay else accent
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(animal.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
-            Counter(animal.count, MaterialTheme.typography.bodyLarge, colour) {
-                if (backward) "${format(it)} fewer will ever be born" else "${format(it)} spared"
+            Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Counter(impact.netAnimals, MaterialTheme.typography.bodyLarge, colour) {
+                if (backward) "${format(it)} fewer will ever be born" else "${format(it)} never raised"
             }
         }
-        LogBar(animal.count, max, colour)
+        LogBar(impact.grossAnimals, max, colour)
+        Text(
+            "${format(impact.grossUnits)} ${impact.species.unit} unbought · ${format(impact.grossAnimals)} animals' worth · " +
+                "${format(impact.reboundAnimals)} raised anyway for cheaper-meat buyers",
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
     }
 }
 
@@ -357,24 +496,60 @@ private fun Eulogy(modifier: Modifier) {
 }
 
 @Composable
-private fun MarketRow(effect: MarketEffect, modifier: Modifier) {
+private fun MarketRow(world: Impact, personal: Impact?, money: Money, modifier: Modifier) {
+    val unit = world.species.unit
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(effect.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
-            Text(formatPercent(effect.percentPriceChange), style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
+            Text(world.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text(formatPercent(world.priceChange), style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
         }
         Text(
-            "${formatPrice(effect.currentPrice)} → ${formatPrice(effect.newPrice)} ${effect.unit}",
+            "${money.format(world.usdPrice)} → ${money.format(world.newUsdPrice)} per $unit · " +
+                "demand down ${formatPercent(world.demandShift).removePrefix("+")} · " +
+                "${money.format(world.producerRevenueLostUsd)} producer revenue gone",
             style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
         )
         // Linear scale here: price changes all sit within one order of magnitude.
-        LinearBar(abs(effect.percentPriceChange) / 0.4, if (effect.belowBreakeven) Piety.Clay else Piety.Fern)
-        if (effect.belowBreakeven) {
+        LinearBar(abs(world.priceChange) / 0.4, if (world.belowBreakeven) Piety.Clay else Piety.Fern)
+        if (personal != null) {
+            Text(
+                "Your part: ${formatTiny(personal.priceChange * 100)}% on price, " +
+                    "${money.format(personal.producerRevenueLostUsd)} off producers' takings.",
+                style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+            )
+        }
+        if (world.belowBreakeven) {
             Text(
                 "Past an illustrative producer-margin line — herds would get thinned, not just margins.",
                 style = MaterialTheme.typography.bodySmall, color = Piety.Clay,
             )
         }
+    }
+}
+
+@Composable
+private fun BiologyRow(world: Impact, personal: Impact?, modifier: Modifier) {
+    val bio = world.species.biology ?: return
+    val backward = world.species.existsBecauseOfDemand
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(world.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text(
+                "${format(world.breedersNotKept ?: 0.0)} breeders ${if (backward) "lost" else "retired"}",
+                style = MaterialTheme.typography.bodyLarge, color = if (backward) Piety.Clay else Piety.Sprout,
+            )
+        }
+        Text(
+            "${format(bio.perBirthing)} per ${bio.birthing}, ${format(bio.offspringPerBreederYear)} a year per breeder · " +
+                "${bio.gestationDays} days to birth + ${bio.slaughterAgeDays} to slaughter = " +
+                "${bio.supplyLagDays} days before a cut reaches the shelf",
+            style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+        )
+        Text(
+            "World: ${format(world.birthingsNotNeeded ?: 0.0)} ${bio.birthing}s not needed." +
+                (personal?.birthingsNotNeeded?.let { " Yours: ${format(it)}." } ?: ""),
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
     }
 }
 
@@ -404,15 +579,9 @@ private fun PrecedentRow(p: ExtinctionPrecedent, state: LazyListState, key: Stri
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Recap(
-    personal: List<SparedAnimal>,
-    sphere: List<SparedAnimal>,
-    world: WorldTally,
-    market: List<MarketEffect>,
-    modifier: Modifier,
-) {
-    val top = personal.filterNot { it.existsBecauseOfDemand }.maxByOrNull { it.count }
-    val steepest = market.minByOrNull { it.percentPriceChange }
+private fun Recap(personal: Layer, influence: Layer?, world: Layer, money: Money, modifier: Modifier) {
+    val top = personal.impacts.filterNot { it.species.existsBecauseOfDemand }.maxByOrNull { it.netAnimals }
+    val steepest = world.impacts.minByOrNull { it.priceChange }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Eyebrow("In sum")
         Text("The whole ledger", style = MaterialTheme.typography.displayMedium, color = Piety.Oat)
@@ -421,12 +590,12 @@ private fun Recap(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             maxItemsInEachRow = 2,
         ) {
-            Tile("You", format(personal.sparedTotal()), "animals spared", Piety.Sage, Modifier.weight(1f))
-            Tile("Your circle", format(sphere.sparedTotal()), "if they followed", Piety.Fern, Modifier.weight(1f))
-            Tile("Everyone abstaining", format(world.animals.sparedTotal()), "over the same span", Piety.Sprout, Modifier.fillMaxWidth())
-            if (top != null) Tile("Most spared", top.name, "${format(top.count)} of them", Piety.Sage, Modifier.weight(1f))
+            Tile("You", format(personal.netSpared), "never raised", Piety.Sage, Modifier.weight(1f))
+            if (influence != null) Tile("Your reach", format(influence.netSpared), "never raised", Piety.Fern, Modifier.weight(1f))
+            Tile("Everyone abstaining", format(world.netSpared), "never raised, same span", Piety.Sprout, Modifier.fillMaxWidth())
+            if (top != null) Tile("Most spared", top.species.name, "${format(top.netAnimals)} of them", Piety.Sage, Modifier.weight(1f))
             if (steepest != null) {
-                Tile("Steepest price drop", steepest.name, formatPercent(steepest.percentPriceChange), Piety.Clay, Modifier.weight(1f))
+                Tile("Steepest price drop", steepest.species.name, "${formatPercent(steepest.priceChange)} · ${money.format(steepest.newUsdPrice)}", Piety.Clay, Modifier.weight(1f))
             }
         }
     }
