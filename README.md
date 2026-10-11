@@ -1,18 +1,31 @@
 # Meat Piety
 
-A calculator for vegans and vegetarians. Pick the day you stopped eating
-meat and it works out what that did to each animal's market and population:
-- the meat not bought and the price drop it caused;
-- how much of the slack cheaper prices tempted others into eating;
-- the animals never bred, with their litters, the replacement breeders and
-  the male chicks and calves bred alongside them;
-- the factory-farm shift that squeezed margins cause;
-- the land, water and emissions spared, net of the food eaten instead.
+A ledger of the dead who stayed that way, on your account.
 
-The same model runs for the people you've influenced (once you link a social
-account) and for the world's vegans and vegetarians. It also projects the
-herds forward against UN population projections. Buffalo keep a backward
-line: their numbers survive on ranching demand, not despite it.
+Meat Piety works out what not eating animals has actually done. Your
+abstention was not a moral feeling; it was a demand shock. Pick the day you
+stopped, and it follows the shock all the way down:
+
+- **The market.** Meat you didn't buy, the price drop it caused, and the
+  cheaper meat someone else ate because of it.
+- **The animals.** The ones never bred. That includes whole litters and
+  clutches, the replacement breeders who were never born, the male chicks
+  who were never hatched to be killed, and the calves never sent to veal.
+- **The farms.** The squeeze that closes small farms first, which leaves the
+  animals still bred in factory barns.
+- **The land.** Emissions, cleared land and water spared, net of the tofu
+  eaten instead.
+- **The future.** Herds projected against UN population curves, and what
+  would outlast farming if it stopped.
+
+The same model runs for the people you've influenced, once you link a social
+account, and for every vegan and vegetarian alive. Bison keep a backward
+line: they survive because people eat them.
+
+Every number is sourced, ranged where it's uncertain, and honest about what
+it can't count. Live U.S. retail prices are converted to your currency.
+Notifications arrive only while you're away. It runs on Android and as an
+installable web app.
 
 The calculator itself — `shared/src/commonMain` — is Kotlin Multiplatform
 Compose, built once and run on both Android and web.
@@ -26,6 +39,7 @@ Compose, built once and run on both Android and web.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, files, platform code, data flow, screen order, PWA, tests |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Building, releasing, deploying the worker, secrets, notifications |
 | [worker/README.md](worker/README.md) | Worker endpoints, platforms, BLS series |
+| [docs/PLAY_LISTING.md](docs/PLAY_LISTING.md) | Google Play title, short and full descriptions |
 | [PRIVACY.md](PRIVACY.md) | Privacy policy (also served by the web build as `privacy.html`) |
 
 ## Modules
