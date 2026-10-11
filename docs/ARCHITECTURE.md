@@ -70,6 +70,25 @@
 12. What this doesn't count.
 13. Recap.
 
+## Home-screen widgets (Android)
+
+`app/src/main/java/.../widget/Widgets.kt`, built with Jetpack Glance. Each
+reads `widgetSnapshot()` (`shared/src/androidMain/.../WidgetSnapshot.kt`),
+the same model as the app with built-in prices and no network.
+
+| Widget | Shows |
+|---|---|
+| Ledger | Fewer animals slaughtered and the day count |
+| Never born | Every animal never born, whole litters, male chicks and calves, top three species |
+| Next animal | Progress bar to the next whole animal never bred, and days to go |
+| Spared, net | CO₂e, land and water after the food eaten instead |
+| Outlived | Farm lifetimes your span already covers (broilers, ducks, turkeys…) |
+
+The widgets refresh every six hours and whenever the app goes to the
+background. Every widget has a full-sentence content description, large
+numerals and text colours that clear WCAG AA on the dark card. Tapping a
+widget opens the app.
+
 ## PWA
 
 `shared/src/wasmJsMain/resources/` holds:

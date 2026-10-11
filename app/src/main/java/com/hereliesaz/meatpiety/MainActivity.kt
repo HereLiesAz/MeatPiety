@@ -8,6 +8,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import com.hereliesaz.meatpiety.widget.updateAllWidgets
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     // Milestones crossed before permission is granted fire the next time the ledger changes.
@@ -24,5 +27,11 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent { MeatPietyApp() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // The start date or diet may have changed; bring the home-screen widgets up to date.
+        lifecycleScope.launch { updateAllWidgets(applicationContext) }
     }
 }
