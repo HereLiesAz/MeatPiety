@@ -110,3 +110,12 @@ class WholeAnimalTest {
         assertEquals(early.netAnimals, early.stillAlive!!, 1e-9)
     }
 }
+
+class ProjectionTest {
+    @Test
+    fun projectionsGrowWithTime() {
+        val p = projections(365, Diet.VEGAN)
+        assertTrue(p.zipWithNext().all { (a, b) -> b.personal.netSpared > a.personal.netSpared && b.abstainers > a.abstainers })
+        assertEquals(personalLayer(365 * 2, Diet.VEGAN).netSpared, p.first().personal.netSpared, 1e-9)
+    }
+}

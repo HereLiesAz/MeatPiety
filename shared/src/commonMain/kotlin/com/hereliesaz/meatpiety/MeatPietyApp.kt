@@ -214,6 +214,17 @@ private fun LedgerScreen() {
                 layer = world, accent = Piety.Sprout, money = money, days = days,
             )
 
+            item(key = "future-head") {
+                ChapterHead(
+                    "→", "If you keep going",
+                    "Your ledger at each horizon if you stay ${if (diet == Diet.VEGAN) "vegan" else "vegetarian"}, and the world's " +
+                        "if abstainers grow ${(ABSTAINER_GROWTH * 100).toInt()}% a year — a stated guess, not a forecast.",
+                )
+            }
+            itemsIndexed(projections(days, diet, prices), key = { _, it -> "future-${it.yearsAhead}" }) { i, p ->
+                ProjectionRow(p, money, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            }
+
             item(key = "eulogy") { Eulogy(Modifier.column().padding(vertical = 72.dp)) }
 
             item(key = "market-head") {
@@ -423,6 +434,23 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
             "${format(impact.grossUnits)} ${impact.species.unit} unbought · ${format(impact.grossAnimals)} animals' worth · " +
                 "${format(impact.reboundAnimals)} raised anyway for cheaper-meat buyers" +
                 (impact.stillAlive?.let { " · ${format(it)} still alive, slaughter postponed" } ?: ""),
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
+    }
+}
+
+@Composable
+private fun ProjectionRow(p: Projection, money: Money, modifier: Modifier) {
+    val chicken = p.world.impacts.first { it.species.name == "Chickens" }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("In ${p.yearsAhead} year${if (p.yearsAhead == 1) "" else "s"}", style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text("${format(p.personal.netSpared)} fewer slaughtered", style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
+        }
+        Text(
+            "You: ${money.format(p.personal.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent. " +
+                "World: ${format(p.abstainers)} abstainers, ${format(p.world.netSpared)} fewer slaughtered that year, " +
+                "chicken ${formatPercent(chicken.priceChange)}.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }

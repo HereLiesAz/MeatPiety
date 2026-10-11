@@ -25,6 +25,9 @@ Compose, built once and run on both Android and web.
   needed, producer revenue lost, and animals still alive: those already born
   for that demand whose slaughter is postponed while breeding cuts work
   through (a day's share per elapsed day, capped at slaughter age).
+- `projections()` (Economics.kt) — your ledger 1, 5, 10 and 25 years on, and
+  one year of world abstention at that horizon's headcount, assuming 3% yearly
+  growth (`ABSTAINER_GROWTH`, a stated guess).
 - `Influence.kt` — linked handles → follower counts → reached (organic reach
   per platform, overlap-discounted) → persuaded → still abstaining (16%).
   No linked account with a readable count, no influence chapter.

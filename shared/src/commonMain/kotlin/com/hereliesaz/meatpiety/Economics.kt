@@ -108,10 +108,30 @@ fun influenceLayer(people: Double, days: Int, diet: Diet, prices: Map<String, Do
 }
 
 /** Every vegan and vegetarian on earth, at the world-average diet. */
-fun worldLayer(days: Int, prices: Map<String, Double> = emptyMap()): Layer {
+fun worldLayer(days: Int, prices: Map<String, Double> = emptyMap(), growth: Double = 1.0): Layer {
     val years = days / 365.0
     return Layer(SPECIES.map {
-        val abstainers = if (it.requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE
+        val abstainers = (if (it.requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * growth
         impact(it, abstainers * it.usPerCapita * it.worldToUsRatio, years, prices[it.name] ?: it.usdPrice)
     })
 }
+
+// Assumed yearly growth of the world's vegans and vegetarians. Survey trends
+// (Ipsos, Google Trends, plant-based sales) put it in low single digits; 3%
+// is a round, stated guess, not a forecast.
+internal const val ABSTAINER_GROWTH = 0.03
+
+/** One future horizon: your ledger if you keep going, and the world's if abstention keeps growing. */
+data class Projection(val yearsAhead: Int, val personal: Layer, val world: Layer, val abstainers: Double)
+
+fun projections(days: Int, diet: Diet, prices: Map<String, Double> = emptyMap(), horizons: List<Int> = listOf(1, 5, 10, 25)) =
+    horizons.map { h ->
+        val growth = kotlin.math.exp(h * kotlin.math.ln(1 + ABSTAINER_GROWTH))
+        Projection(
+            yearsAhead = h,
+            personal = personalLayer(days + h * 365, diet, prices),
+            // World snapshot h years out: one year of abstention at that year's headcount.
+            world = worldLayer(365, prices, growth),
+            abstainers = (VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * growth,
+        )
+    }
