@@ -29,9 +29,7 @@ new needs in `.github/workflow-request.yml`.
   the `mapping.txt` this produces.
 - **Version state:** `.version-state.json` is written by the controller.
   Don't edit it by hand.
-- **Privacy policy:** Play needs a public URL. Use the copy the web build
-  serves (`privacy.html`) or the GitHub view of `PRIVACY.md`. Regenerate
-  `privacy.html` whenever `PRIVACY.md` changes.
+- **Privacy policy:** use the GitHub URL of `PRIVACY.md` for the listing.
 - **Play Console:** the app `com.hereliesaz.meatpiety` must exist there, with
   the service account granted release access, before API uploads can
   succeed.

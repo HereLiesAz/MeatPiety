@@ -40,7 +40,7 @@ Compose, built once and run on both Android and web.
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Building, releasing, deploying the worker, secrets, notifications |
 | [worker/README.md](worker/README.md) | Worker endpoints, platforms, BLS series |
 | [docs/PLAY_LISTING.md](docs/PLAY_LISTING.md) | Google Play title, short and full descriptions |
-| [PRIVACY.md](PRIVACY.md) | Privacy policy (also served by the web build as `privacy.html`) |
+| [PRIVACY.md](PRIVACY.md) | Privacy policy |
 
 ## Modules
 
