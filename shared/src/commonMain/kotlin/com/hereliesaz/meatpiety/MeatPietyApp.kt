@@ -66,7 +66,7 @@ import kotlinx.coroutines.delay
  *   accounts → chapters (yours, your reach [only with a linked account], the
  *   world), each a counting headline over log-scaled bars → buffalo eulogy →
  *   market → the animal (breeding) → precedent timeline → bento recap.
- *   Milestones crossed are posted as system notifications (Notifier).
+ *   Milestones are notified only while the user is away (Notifier).
  * All motion honours LocalReducedMotion.
  */
 
@@ -88,8 +88,8 @@ private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(
 
 @Composable
 private fun LedgerScreen() {
-    var daysText by remember { mutableStateOf("365") }
-    var diet by remember { mutableStateOf(Diet.VEGAN) }
+    var daysText by remember { mutableStateOf((StartDate.days() ?: 365).toString()) }
+    var diet by remember { mutableStateOf(Storage.get("diet")?.let { d -> Diet.entries.firstOrNull { it.name == d } } ?: Diet.VEGAN) }
     val handles = remember { mutableStateMapOf<Platform, String>() }
     val lookups = remember { mutableStateMapOf<Platform, FollowerLookup>() }
     var prices by remember { mutableStateOf(emptyMap<String, Double>()) }
@@ -110,7 +110,7 @@ private fun LedgerScreen() {
     val influence = remember(funnel, days, diet, prices) { funnel?.let { influenceLayer(it.stayed, days, diet, prices) } }
     val world = remember(days, prices) { worldLayer(days, prices) }
     val notices = remember(days, personal, influence, world, money) { milestones(days, personal, influence, world, money) }
-    LaunchedEffect(notices) { Notifier.postNew(notices) }
+    LaunchedEffect(notices) { Notifier.foreground(LedgerSnapshot(days, diet, funnel?.stayed, money), notices) }
 
     val state = rememberLazyListState()
     val reduced = LocalReducedMotion.current
@@ -138,7 +138,7 @@ private fun LedgerScreen() {
                         Diet.entries.forEachIndexed { index, option ->
                             SegmentedButton(
                                 selected = diet == option,
-                                onClick = { diet = option },
+                                onClick = { diet = option; Storage.set("diet", option.name) },
                                 shape = SegmentedButtonDefaults.itemShape(index, Diet.entries.size),
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = Piety.Moss, activeContentColor = Piety.Oat,
@@ -148,7 +148,7 @@ private fun LedgerScreen() {
                             ) { Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian") }
                         }
                     }
-                    NumberField(daysText, { daysText = it }, "Days lived this way", Modifier.fillMaxWidth())
+                    NumberField(daysText, { daysText = it; it.toIntOrNull()?.let(StartDate::setDays) }, "Days lived this way · counts up daily", Modifier.fillMaxWidth())
                 }
             }
             item(key = "accounts") {

@@ -1,13 +1,16 @@
 package com.hereliesaz.meatpiety
 
+/** What the background check needs to recompute the ledger while the user is away. */
+data class LedgerSnapshot(val days: Int, val diet: Diet, val influencePeople: Double?, val money: Money)
+
 /**
- * Posts milestone [Notice]s as operating-system notifications (Android
- * notification shade, browser Notification API). Each notice id is sent once
- * per install; the record survives restarts.
+ * Milestone notifications fire only while the user is away from the app. In
+ * the foreground, [foreground] records the ledger and marks every milestone
+ * already crossed as known, so opening the app or changing a value never
+ * notifies. A daily background check advances the day count from the saved
+ * start date and notifies for milestones crossed since (Android only; the
+ * web has no reliable background execution).
  */
 expect object Notifier {
-    fun post(notice: Notice)
+    fun foreground(snapshot: LedgerSnapshot, notices: List<Notice>)
 }
-
-/** Sends the notices not already sent. */
-internal fun Notifier.postNew(notices: List<Notice>) = notices.forEach(::post)

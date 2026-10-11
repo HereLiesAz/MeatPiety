@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive layers are 108dp with a 66dp safe zone; inset keeps the cow inside it. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_stat_meatpiety"
+    android:inset="25%" />

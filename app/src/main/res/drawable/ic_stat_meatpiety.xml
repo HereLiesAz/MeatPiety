@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-colour cow head for the status bar and themed launcher icons.
+     Android tints it; only the alpha channel matters. Nostrils and eyes are
+     cut out with evenOdd. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M3,3.5C3.8,5.8 5.4,7 7.4,7.3L7.4,7.3C6.2,7.5 3.6,7.4 2,8.6C2.9,10.2 4.9,10.7 6.6,10.4L7.4,14.6C7.6,15.6 7.4,16.6 7.4,17.6C7.4,20 9.4,21.5 12,21.5C14.6,21.5 16.6,20 16.6,17.6C16.6,16.6 16.4,15.6 16.6,14.6L17.4,10.4C19.1,10.7 21.1,10.2 22,8.6C20.4,7.4 17.8,7.5 16.6,7.3L16.6,7.3C18.6,7 20.2,5.8 21,3.5C19.3,4.8 17.4,5.2 15.6,5.6C14.6,5.1 13.4,4.8 12,4.8C10.6,4.8 9.4,5.1 8.4,5.6C6.6,5.2 4.7,4.8 3,3.5Z
+            M9.6,10.2a1,1 0,1 0,0.01 0Z
+            M14.4,10.2a1,1 0,1 0,0.01 0Z
+            M10.2,17.2a0.9,1.1 0,1 0,0.01 0Z
+            M13.8,17.2a0.9,1.1 0,1 0,0.01 0Z" />
+</vector>

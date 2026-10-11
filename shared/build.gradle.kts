@@ -39,6 +39,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation("io.ktor:ktor-client-okhttp:3.5.2")
+            implementation("androidx.work:work-runtime:2.11.2")
         }
         wasmJsMain.dependencies {
             implementation("io.ktor:ktor-client-js:3.5.2")

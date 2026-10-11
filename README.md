@@ -36,8 +36,12 @@ Compose, built once and run on both Android and web.
   No linked account with a readable count, no influence chapter.
 - `Money.kt` — prices are U.S. figures in USD, converted to the user's
   national currency (device locale on Android, visitor country on web).
-- `Milestones.kt` — notices for thresholds crossed; `Notifier` posts each
-  once as a system notification (Android shade, browser Notification API).
+- `Milestones.kt` — thresholds the ledger crosses. `Notifier` only notifies
+  while the user is away: in the app it saves the ledger and marks every crossed milestone as known; a daily WorkManager job
+  advances the day count and notifies for milestones crossed since. Opening
+  the app or changing values never notifies. The web build doesn't notify.
+- `Storage.kt` — persisted start date (today − days entered), so the day
+  count advances daily on its own; diet is remembered too.
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 
@@ -102,6 +106,9 @@ The Android launcher uses the full-bleed cow artwork in
 that image as the adaptive background and a transparent foreground.
 No rounded corners are baked into the asset; the device launcher applies
 its own adaptive mask and can crop the image's outermost details.
+`drawable/ic_stat_meatpiety.xml` is a single-colour cow head used as the
+notification status-bar icon and, inset, as the adaptive icon's
+`<monochrome>` layer for themed launchers.
 The manifest declares both `android:icon` and `android:roundIcon`.
 
 ## Running the web build
