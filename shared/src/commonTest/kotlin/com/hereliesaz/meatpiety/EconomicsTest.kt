@@ -102,8 +102,11 @@ class WholeAnimalTest {
     }
 
     @Test
-    fun fewerAliveFollowsLittlesLaw() {
-        val chicken = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        assertEquals(chicken.netAnimals * 47 / 365.0, chicken.fewerAliveAtOnce!!, 1e-9)
+    fun stillAliveIsThePipelineCappedAtSlaughterAge() {
+        val year = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        assertEquals(year.netAnimals * 47 / 365.0, year.stillAlive!!, 1e-9)
+        // Before one slaughter age has passed, everything spared so far is still in the pipeline.
+        val early = personalLayer(20, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        assertEquals(early.netAnimals, early.stillAlive!!, 1e-9)
     }
 }

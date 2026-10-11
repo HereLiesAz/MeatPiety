@@ -24,9 +24,11 @@ data class Impact(
     val netAnimals: Double,
     val reboundUnits: Double,
     val breedersNotKept: Double?,
-    // Little's law: fewer slaughtered per year × years each animal lives before
-    // slaughter = how many fewer are alive at any one moment.
-    val fewerAliveAtOnce: Double?,
+    // Animals already born for your share when your demand left. Producers
+    // can only cut breeding, so these are slaughtered later than scheduled
+    // while the cut works through; at any moment that is a day's worth of
+    // your share for each day of the pipeline elapsed, up to slaughter age.
+    val stillAlive: Double?,
     val birthingsNotNeeded: Double?,
     val producerRevenueLostUsd: Double,
     val belowBreakeven: Boolean,
@@ -77,7 +79,7 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
         // Breeders are a standing herd: an annual rate of animals not raised,
         // divided by what one breeder produces a year.
         breedersNotKept = bio?.let { if (years > 0) netAnimals / years / it.offspringPerBreederYear else 0.0 },
-        fewerAliveAtOnce = bio?.let { if (years > 0) netAnimals / years * it.slaughterAgeDays / 365.0 else 0.0 },
+        stillAlive = bio?.let { if (years > 0) netAnimals / (years * 365.0) * minOf(years * 365.0, it.slaughterAgeDays.toDouble()) else 0.0 },
         birthingsNotNeeded = bio?.let { netAnimals / it.perBirthing },
         producerRevenueLostUsd = (revenueBefore - revenueAfter) * years,
         belowBreakeven = -priceChange >= species.breakevenDrop,

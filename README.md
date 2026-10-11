@@ -22,7 +22,9 @@ Compose, built once and run on both Android and web.
 - `Economics.kt` — one global constant-elasticity market per species. A layer
   removes demand; the new equilibrium gives the price change, rebound
   consumption, net animals not raised, breeders not kept, birthings not
-  needed, and producer revenue lost.
+  needed, producer revenue lost, and animals still alive: those already born
+  for that demand whose slaughter is postponed while breeding cuts work
+  through (a day's share per elapsed day, capped at slaughter age).
 - `Influence.kt` — linked handles → follower counts → reached (organic reach
   per platform, overlap-discounted) → persuaded → still abstaining (16%).
   No linked account with a readable count, no influence chapter.
