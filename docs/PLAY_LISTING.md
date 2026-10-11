@@ -12,7 +12,7 @@ Meat Piety
 ## Short description
 
 ~~~
-You didn't save 200 animals. Here's what you actually did. It's still a lot.
+Count every animal your vegan or vegetarian life has spared. Watch it grow.
 ~~~
 
 ## Full description
