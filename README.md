@@ -28,7 +28,8 @@ Compose, built once and run on both Android and web.
   No linked account with a readable count, no influence chapter.
 - `Money.kt` — prices are U.S. figures in USD, converted to the user's
   national currency (device locale on Android, visitor country on web).
-- `Milestones.kt` — in-app notices fired as thresholds are crossed.
+- `Milestones.kt` — notices for thresholds crossed; `Notifier` posts each
+  once as a system notification (Android shade, browser Notification API).
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 

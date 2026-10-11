@@ -1,7 +1,6 @@
 package com.hereliesaz.meatpiety
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,7 +66,7 @@ import kotlinx.coroutines.delay
  *   accounts → chapters (yours, your reach [only with a linked account], the
  *   world), each a counting headline over log-scaled bars → buffalo eulogy →
  *   market → the animal (breeding) → precedent timeline → bento recap.
- *   Milestone notices slide up from the bottom as thresholds are crossed.
+ *   Milestones crossed are posted as system notifications (Notifier).
  * All motion honours LocalReducedMotion.
  */
 
@@ -112,6 +110,7 @@ private fun LedgerScreen() {
     val influence = remember(funnel, days, diet, prices) { funnel?.let { influenceLayer(it.stayed, days, diet, prices) } }
     val world = remember(days, prices) { worldLayer(days, prices) }
     val notices = remember(days, personal, influence, world, money) { milestones(days, personal, influence, world, money) }
+    LaunchedEffect(notices) { Notifier.postNew(notices) }
 
     val state = rememberLazyListState()
     val reduced = LocalReducedMotion.current
@@ -254,40 +253,6 @@ private fun LedgerScreen() {
             }
 
             item(key = "recap") { Recap(personal, influence, world, money, Modifier.column().padding(top = 96.dp)) }
-        }
-        NoticeTray(notices, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp))
-    }
-}
-
-/** Shows each newly crossed milestone for a few seconds, oldest first. */
-@Composable
-private fun NoticeTray(notices: List<Notice>, modifier: Modifier) {
-    val seen = remember { mutableSetOf<String>() }
-    val queue = remember { mutableStateListOf<Notice>() }
-    LaunchedEffect(notices) {
-        notices.filter { seen.add(it.id) }.let { queue.addAll(it) }
-    }
-    val current = queue.firstOrNull()
-    LaunchedEffect(current) {
-        if (current != null) {
-            delay(4_000)
-            queue.remove(current)
-        }
-    }
-    if (current != null) {
-        val shape = RoundedCornerShape(20.dp)
-        Column(
-            modifier
-                .widthIn(max = MaxColumn)
-                .fillMaxWidth()
-                .background(Piety.Bark, shape)
-                .border(1.dp, Piety.Fern.copy(alpha = 0.5f), shape)
-                .clickable { queue.remove(current) }
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(current.title, style = MaterialTheme.typography.titleMedium, color = Piety.Oat)
-            Text(current.body, style = MaterialTheme.typography.bodySmall, color = Piety.Lichen)
         }
     }
 }
