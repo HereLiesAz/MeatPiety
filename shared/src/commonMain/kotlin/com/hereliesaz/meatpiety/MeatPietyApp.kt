@@ -238,6 +238,20 @@ private fun LedgerScreen() {
                 ProjectionRow(p, money, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
             }
 
+            item(key = "extinct-head") {
+                ChapterHead(
+                    "†", "How long they last",
+                    "If abstainers keep growing ${(ABSTAINER_GROWTH * 100).toInt()}% a year, each year's drop in demand shrinks the herd " +
+                        "and the price. When the price falls past the producer margin, commercial breeding ends and the farmed breeds go. " +
+                        "The species survives only where something lives outside the market. Projections, not prophecy.",
+                )
+            }
+            itemsIndexed(extinctionOutlook(), key = { _, it -> "ext-${it.species.name}" }) { i, o ->
+                OutlookRow(o, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            }
+
+            item(key = "soy") { SoyChapter(personal, world, Modifier.column().padding(top = 96.dp)) }
+
             item(key = "eulogy") { Eulogy(Modifier.column().padding(vertical = 72.dp)) }
 
             item(key = "market-head") {
@@ -502,6 +516,54 @@ private fun ProjectionRow(p: Projection, money: Money, modifier: Modifier) {
             "You: ${money.format(p.personal.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent. " +
                 "World: ${format(p.abstainers)} abstainers, ${format(p.world.netSpared)} fewer slaughtered that year, " +
                 "chicken ${formatPercent(chicken.priceChange)}.",
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
+    }
+}
+
+@Composable
+private fun OutlookRow(o: ExtinctionOutlook, modifier: Modifier) {
+    val year = StartDate.label(todayEpochDay()).substringAfterLast(' ').toInt()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(o.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text(
+                o.yearsToCommercialEnd?.let { "farming ends ~${year + it}" } ?: "farming continues",
+                style = MaterialTheme.typography.bodyLarge, color = if (o.species.existsBecauseOfDemand) Piety.Clay else Piety.Sprout,
+            )
+        }
+        Text(
+            "${format(o.herdNow)} alive in farms today" +
+                (o.herdAtEnd?.let { " · ${format(it)} when breeding stops, then culled or left to age out" } ?: "") +
+                ". Lives on in ${o.reservoir} (~${format(o.reservoirSize)}): " +
+                if (o.speciesSurvives) "the species survives." else "too few to persist.",
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
+    }
+}
+
+@Composable
+private fun SoyChapter(personal: Layer, world: Layer, modifier: Modifier) {
+    val you = personal.soy
+    val all = world.soy
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Eyebrow("Soy and tofu")
+        Text("The feed was the soy", style = MaterialTheme.typography.displayMedium, color = Piety.Oat)
+        Text(
+            "About ${(SOY_FED_TO_ANIMALS * 100).toInt()}% of the world's soy is grown to feed animals; tofu, tempeh and soy milk " +
+                "are a sliver. The animals never bred on your account would have eaten ${format(you.soyFreedKg)} kg of soy — " +
+                "${format(you.tofuKg)} kg of tofu, if it went to people instead.",
+            style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+        )
+        Text(
+            "Everyone abstaining frees ${format(all.soyFreedKg / 1e6)} thousand tonnes over the same span: " +
+                "${format(all.shareOfWorldTofu * 100)}% of a year's world tofu (≈${format(GLOBAL_TOFU_KG / 1e9)} Mt, a disputed estimate).",
+            style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+        )
+        Text(
+            "Tofu on the shelf barely moves meat prices: grocery-scanner studies find plant proteins are weak substitutes " +
+                "for beef and, at best, modest ones for chicken. Its market role runs the other way — the less meat is raised, " +
+                "the more soy is left for tofu.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }
