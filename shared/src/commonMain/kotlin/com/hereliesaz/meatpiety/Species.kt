@@ -16,7 +16,7 @@ data class Species(
     val name: String,
     val unit: String,
     // U.S. retail consumption per person per year, in [unit]. USDA ERS food
-    // availability (boneless retail weight), NOAA Fisheries for seafood,
+    // availability (retail weight), NOAA Fisheries for seafood,
     // USDA egg/dairy supply-and-use tables. Chosen so that
     // usPerCapita / unitsPerAnimal matches Harish Sethu's Counting Animals
     // per-capita animal counts.
@@ -41,8 +41,8 @@ data class Species(
     // Fish and shellfish have no such sources; their values are illustrative.
     val demandElasticity: Double,
     val supplyElasticity: Double,
-    // Share of retail price that is producer margin. A price drop past it
-    // means breeding stock is culled, not held. Illustrative.
+    // Producer margin as a share of price. Only used to set the small-farm
+    // margin in Consolidation.kt (half of this). Illustrative.
     val breakevenDrop: Double,
     val requiresVeganism: Boolean,
     // Bison exist mostly because people buy them. Less demand means fewer bred.
