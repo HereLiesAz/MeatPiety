@@ -60,6 +60,28 @@ Compose, built once and run on both Android and web.
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 
+## Sources
+
+| Figure | Source |
+|---|---|
+| Live animals (2024) | FAOSTAT QCL, World: stocks, laying hens, dairy cows |
+| Demand elasticities | USDA ERS meta-analysis (Chen & Abler 2012) |
+| Supply response | Norwood & Lusk, *Compassion by the Pound* (2011), cumulative elasticity factors |
+| Factory-farmed shares | Sentience Institute, US Factory Farming Estimates (2024) |
+| Soy per kg | WWF-NL / Profundo, *European soy supply* (2021) |
+| Soy to feed (77%) | Ritchie & Roser, Our World in Data (2021) |
+| Bison, mouflon, junglefowl | IUCN Red List / BirdLife |
+| Mallards | USFWS Waterfowl Population Status (2025) |
+| Wild turkeys | NWTF (2016) |
+| Wild boar / feral swine | ENETWILD (2025); USDA APHIS |
+| Minimum viable population | Traill, Bradshaw & Brook (2007): 4,169 |
+| Footprint | Poore & Nemecek (2018) |
+
+Still unsourced, and labelled so in the app: world tofu output (no
+authoritative figure; 2–5 Mt industry range), global vegan/vegetarian
+headcount, abstainer growth (Gallup shows the US share flat), fish and
+shellfish elasticities, producer margins, small-farm margin.
+
 ## Worker
 
 `worker/` is a Cloudflare Worker at `meatpiety.hereliesaz.workers.dev`,

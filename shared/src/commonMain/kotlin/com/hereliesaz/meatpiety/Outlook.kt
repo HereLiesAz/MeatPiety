@@ -20,33 +20,50 @@ import kotlin.math.pow
  * feed, which is shown as tofu it could have made.
  */
 
-/** Standing global populations (FAOSTAT live animals, 2021–2023, rounded). */
+/**
+ * Standing global populations: FAOSTAT QCL, World, 2024 (bulk file
+ * Production_Crops_Livestock_E_All_Data). Chickens = stocks minus laying hens
+ * (hen eggs, "Laying"); cows = cattle stocks minus dairy cows (raw cattle milk,
+ * "Milk Animals"). Bison: ~500,000 commercial in North America (IUCN 2017:
+ * ~97% of the continental population is commercial; Canada 149,539 in the
+ * 2021 Census of Agriculture).
+ */
 internal val GLOBAL_HERD = mapOf(
-    "Chickens" to 18.8e9, // 27.2 bn chickens minus 8.4 bn laying hens
-    "Egg-Laying Hens" to 8.4e9,
-    "Turkeys" to 0.45e9,
-    "Ducks" to 1.2e9,
-    "Pigs" to 0.78e9,
-    "Cows" to 1.28e9, // 1.55 bn cattle minus ~0.27 bn dairy cows
-    "Dairy Cows" to 0.27e9,
-    "Sheep & Lambs" to 1.29e9,
-    "Buffalo" to 0.4e6, // North American commercial bison
+    "Chickens" to 27.68e9 - 8.646e9,
+    "Egg-Laying Hens" to 8.646e9,
+    "Turkeys" to 0.2435e9,
+    "Ducks" to 1.275e9,
+    "Pigs" to 0.9624e9,
+    "Cows" to 1.5786e9 - 0.2946e9,
+    "Dairy Cows" to 0.2946e9,
+    "Sheep & Lambs" to 1.3626e9,
+    "Buffalo" to 0.5e6,
 )
 
-/** What survives without the market, and roughly how many (order of magnitude). */
-internal val RESERVOIRS = mapOf(
-    "Chickens" to ("red junglefowl, backyard and sanctuary flocks" to 1e8),
-    "Egg-Laying Hens" to ("red junglefowl, backyard and sanctuary flocks" to 1e8),
-    "Turkeys" to ("wild turkeys (North America)" to 7e6),
-    "Ducks" to ("wild mallards" to 2e7),
-    "Pigs" to ("wild boar and feral pigs" to 2e7),
-    "Cows" to ("heritage herds and sanctuaries; the wild aurochs is already extinct" to 1e5),
-    "Dairy Cows" to ("heritage herds and sanctuaries; the wild aurochs is already extinct" to 1e5),
-    "Sheep & Lambs" to ("mouflon and feral flocks" to 1e6),
-    "Buffalo" to ("conservation herds (plains and wood bison)" to 3.1e4),
+/**
+ * What survives without the market and how many, where anyone has counted.
+ * Null counts are uncounted, not zero.
+ */
+internal val RESERVOIRS: Map<String, Pair<String, Double?>> = mapOf(
+    // BirdLife/IUCN: Least Concern, decreasing, population not quantified.
+    "Chickens" to ("red junglefowl (Least Concern, uncounted), backyard and sanctuary flocks" to null),
+    "Egg-Laying Hens" to ("red junglefowl (Least Concern, uncounted), backyard and sanctuary flocks" to null),
+    // NWTF, 2016.
+    "Turkeys" to ("wild turkeys in North America" to 6.0e6),
+    // USFWS Waterfowl Population Status 2025, survey area only.
+    "Ducks" to ("wild mallards (surveyed North American breeding population alone)" to 6.6e6),
+    // ENETWILD 2025 (Europe, 13.5–19.6 M, low end) + USDA APHIS (US feral swine, >6 M).
+    "Pigs" to ("wild boar in Europe and feral swine in the US" to 19.5e6),
+    "Cows" to ("heritage herds and sanctuaries (uncounted); the wild aurochs is already extinct" to null),
+    "Dairy Cows" to ("heritage herds and sanctuaries (uncounted); the wild aurochs is already extinct" to null),
+    // IUCN 2020: Near Threatened; no global count.
+    "Sheep & Lambs" to ("mouflon (Near Threatened, uncounted) and feral flocks" to null),
+    // IUCN 2017: ~31,000 in 68 conservation herds.
+    "Buffalo" to ("conservation herds of plains and wood bison" to 3.1e4),
 )
 
-internal const val MINIMUM_VIABLE = 5_000.0
+/** Traill, Bradshaw & Brook 2007: median minimum viable population, 4,169. */
+internal const val MINIMUM_VIABLE = 4_169.0
 
 data class ExtinctionOutlook(
     val species: Species,
@@ -55,12 +72,13 @@ data class ExtinctionOutlook(
     val yearsToCommercialEnd: Int?,
     val herdAtEnd: Double?,
     val reservoir: String,
-    val reservoirSize: Double,
+    val reservoirSize: Double?,
     /** Factory-farmed share today, and when commercial breeding ends. */
     val factoryShareNow: Double?,
     val factoryShareAtEnd: Double?,
 ) {
-    val speciesSurvives get() = reservoirSize >= MINIMUM_VIABLE
+    /** Null when the reservoir is uncounted. */
+    val speciesSurvives get() = reservoirSize?.let { it >= MINIMUM_VIABLE }
 }
 
 private fun Species.shiftIn(years: Int, growth: Double): Double {
@@ -84,18 +102,25 @@ fun extinctionOutlook(growth: Double = ABSTAINER_GROWTH, horizon: Int = 200): Li
         )
     }
 
-/** Soy fed per kg of product (approximate; WWF soy-footprint estimates). */
+/**
+ * Soy embedded per kg of product, retail weight: WWF-NL / Profundo, "European
+ * soy supply" (2021, 2019/20 data, EU27+UK): broiler meat 0.956, farmed fish
+ * 0.951, pork 0.415, beef 0.206; eggs 29 g each (≈0.58 per kg). Turkey and duck
+ * use the broiler factor. No source gives fresh milk, lamb or shellfish, so
+ * they are left out rather than guessed.
+ */
 internal val SOY_KG_PER_KG = mapOf(
-    "Chickens" to 0.58, "Turkeys" to 0.58, "Ducks" to 0.58,
-    "Egg-Laying Hens" to 0.35, "Pigs" to 0.26, "Cows" to 0.2, "Buffalo" to 0.2,
-    "Dairy Cows" to 0.03, "Sheep & Lambs" to 0.05, "Fish" to 0.3, "Shellfish" to 0.3,
+    "Chickens" to 0.956, "Turkeys" to 0.956, "Ducks" to 0.956,
+    "Egg-Laying Hens" to 0.58, "Pigs" to 0.415, "Cows" to 0.206, "Buffalo" to 0.206,
+    "Fish" to 0.951,
 )
 
-// About 77% of the world's soy feeds animals (Our World in Data, 2021).
+// 77% of the world's soy feeds animals (Ritchie & Roser, Our World in Data, 2021).
 internal const val SOY_FED_TO_ANIMALS = 0.77
-// Firm tofu yield per kg of dry soybeans.
+// Firm tofu yield: ~1.9–2.4 kg per kg dry soybeans in food-science trials.
 internal const val TOFU_KG_PER_SOY_KG = 2.0
-// Global tofu output estimates disagree widely (about 2–5 Mt); 3 Mt is a midpoint.
+// No authoritative world tofu figure exists (FAO doesn't track it); industry
+// estimates run 2–5 Mt. 3 Mt is a midpoint, labelled as such in the UI.
 internal const val GLOBAL_TOFU_KG = 3e9
 
 data class SoyLedger(val soyFreedKg: Double) {

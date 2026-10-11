@@ -542,8 +542,12 @@ private fun OutlookRow(o: ExtinctionOutlook, modifier: Modifier) {
             "${format(o.herdNow)} alive in farms today" +
                 (o.herdAtEnd?.let { " · ${format(it)} when breeding stops, then culled or left to age out" } ?: "") +
                 (o.factoryShareNow?.let { now -> " · factory-farmed ${(now * 100).toInt()}% today" + (o.factoryShareAtEnd?.let { ", ${(it * 100).toInt()}% by the end" } ?: "") } ?: "") +
-                ". Lives on in ${o.reservoir} (~${format(o.reservoirSize)}): " +
-                if (o.speciesSurvives) "the species survives." else "too few to persist.",
+                ". Lives on in ${o.reservoir}" +
+                when (o.speciesSurvives) {
+                    true -> " (~${format(o.reservoirSize!!)}): enough for the species to persist."
+                    false -> " (~${format(o.reservoirSize!!)}): too few to persist."
+                    null -> ": nobody has counted, so survival can't be called."
+                },
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }

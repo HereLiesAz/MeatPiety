@@ -10,7 +10,10 @@ class OutlookTest {
     fun fasterGrowthEndsCommercialBreedingSooner() {
         val slow = extinctionOutlook(0.02).associateBy { it.species.name }
         val fast = extinctionOutlook(0.05).associateBy { it.species.name }
-        fast.forEach { (name, f) -> assertTrue(f.yearsToCommercialEnd!! < slow.getValue(name).yearsToCommercialEnd!!, name) }
+        fast.forEach { (name, f) ->
+            val s = slow.getValue(name).yearsToCommercialEnd ?: Int.MAX_VALUE
+            assertTrue(f.yearsToCommercialEnd!! < s, name)
+        }
     }
 
     @Test

@@ -31,8 +31,13 @@ data class Species(
     // U.S. retail price in USD per [unit]; replaced by live BLS averages when
     // the price service answers.
     val usdPrice: Double,
-    // Own-price demand elasticity magnitude and short-run supply elasticity
-    // (USDA ERS elasticity database; Norwood & Lusk, Compassion by the Pound).
+    // Own-price demand elasticity magnitude: means of USDA ERS meta-analysis
+    // (Chen & Abler 2012): beef 0.80, pork 0.67, poultry 0.71, eggs 0.82,
+    // dairy 0.78. Long-run supply elasticity is backed out of Norwood & Lusk's
+    // cumulative elasticity factors (Compassion by the Pound, 2011, fig. 8.2:
+    // share of a demand cut that becomes a production cut — beef 0.68, pork
+    // 0.74, chicken 0.76, eggs 0.91, milk 0.56) as es = CEF·ed / (1 − CEF).
+    // Fish and shellfish have no such sources; their values are illustrative.
     val demandElasticity: Double,
     val supplyElasticity: Double,
     // Share of retail price that is producer margin. A price drop past it
@@ -71,7 +76,7 @@ data class Biology(
 internal val SPECIES = listOf(
     Species(
         "Chickens", "lb", usPerCapita = 100.0, unitsPerAnimal = 4.31, worldToUsRatio = 0.29,
-        usdPrice = 2.01, demandElasticity = 0.4, supplyElasticity = 0.5, breakevenDrop = 0.25,
+        usdPrice = 2.01, demandElasticity = 0.71, supplyElasticity = 2.25, breakevenDrop = 0.25,
         requiresVeganism = false,
         biology = Biology("clutch", 12.0, 130.0, 21, 47, 8 * 365, 1.0, 168),
     ),
@@ -87,37 +92,37 @@ internal val SPECIES = listOf(
     ),
     Species(
         "Turkeys", "lb", usPerCapita = 15.0, unitsPerAnimal = 21.4, worldToUsRatio = 0.15,
-        usdPrice = 1.60, demandElasticity = 0.4, supplyElasticity = 0.4, breakevenDrop = 0.20,
+        usdPrice = 1.60, demandElasticity = 0.71, supplyElasticity = 2.25, breakevenDrop = 0.20,
         requiresVeganism = false,
         biology = Biology("clutch", 12.0, 80.0, 28, 140, 10 * 365, 1.0, 210),
     ),
     Species(
         "Ducks", "lb", usPerCapita = 0.33, unitsPerAnimal = 3.3, worldToUsRatio = 6.0,
-        usdPrice = 5.50, demandElasticity = 0.4, supplyElasticity = 0.4, breakevenDrop = 0.20,
+        usdPrice = 5.50, demandElasticity = 0.71, supplyElasticity = 2.25, breakevenDrop = 0.20,
         requiresVeganism = false,
         biology = Biology("clutch", 12.0, 120.0, 28, 49, 10 * 365, 1.0, 182),
     ),
     Species(
         "Pigs", "lb", usPerCapita = 50.0, unitsPerAnimal = 140.0, worldToUsRatio = 0.52,
-        usdPrice = 4.00, demandElasticity = 0.5, supplyElasticity = 0.3, breakevenDrop = 0.20,
+        usdPrice = 4.00, demandElasticity = 0.67, supplyElasticity = 1.91, breakevenDrop = 0.20,
         requiresVeganism = false,
         biology = Biology("litter", 11.5, 25.0, 114, 180, 15 * 365, 0.45, 240),
     ),
     Species(
         "Cows", "lb", usPerCapita = 59.0, unitsPerAnimal = 490.0, worldToUsRatio = 0.24,
-        usdPrice = 5.50, demandElasticity = 0.5, supplyElasticity = 0.15, breakevenDrop = 0.15,
+        usdPrice = 5.50, demandElasticity = 0.8, supplyElasticity = 1.7, breakevenDrop = 0.15,
         requiresVeganism = false,
         biology = Biology("calving", 1.0, 0.9, 283, 540, 20 * 365, 0.15, 450),
     ),
     Species(
         "Sheep & Lambs", "lb", usPerCapita = 1.1, unitsPerAnimal = 47.0, worldToUsRatio = 4.0,
-        usdPrice = 9.50, demandElasticity = 0.5, supplyElasticity = 0.2, breakevenDrop = 0.15,
+        usdPrice = 9.50, demandElasticity = 0.8, supplyElasticity = 1.7, breakevenDrop = 0.15,
         requiresVeganism = false,
         biology = Biology("lambing", 1.5, 1.3, 150, 210, 12 * 365, 0.2, 240),
     ),
     Species(
         "Egg-Laying Hens", "dozen eggs", usPerCapita = 23.3, unitsPerAnimal = 25.0, worldToUsRatio = 0.64,
-        usdPrice = 3.78, demandElasticity = 0.2, supplyElasticity = 0.3, breakevenDrop = 0.20,
+        usdPrice = 3.78, demandElasticity = 0.82, supplyElasticity = 8.29, breakevenDrop = 0.20,
         requiresVeganism = true,
         // About half of hatched layer chicks are male and are culled at hatch;
         // 60 is pullets kept per breeder hen per year.
@@ -125,13 +130,13 @@ internal val SPECIES = listOf(
     ),
     Species(
         "Dairy Cows", "gallon milk", usPerCapita = 76.0, unitsPerAnimal = 2_790.0, worldToUsRatio = 0.43,
-        usdPrice = 4.00, demandElasticity = 0.3, supplyElasticity = 0.15, breakevenDrop = 0.15,
+        usdPrice = 4.00, demandElasticity = 0.78, supplyElasticity = 0.99, breakevenDrop = 0.15,
         requiresVeganism = true,
         biology = Biology("calving", 1.0, 0.9, 283, 1_800, 20 * 365, 0.35, 450),
     ),
     Species(
         "Buffalo", "lb", usPerCapita = 0.096, unitsPerAnimal = 400.0, worldToUsRatio = 0.01,
-        usdPrice = 9.00, demandElasticity = 0.3, supplyElasticity = 0.1, breakevenDrop = 0.20,
+        usdPrice = 9.00, demandElasticity = 0.8, supplyElasticity = 1.7, breakevenDrop = 0.20,
         requiresVeganism = false, existsBecauseOfDemand = true,
         biology = Biology("calving", 1.0, 0.8, 285, 820, 20 * 365, 0.12, 730),
     ),
