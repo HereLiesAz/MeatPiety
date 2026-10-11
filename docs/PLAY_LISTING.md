@@ -6,13 +6,13 @@ characters, full description 4,000 characters.
 ## Title
 
 ~~~
-Meat Piety: Abstention Ledger
+Meat Piety
 ~~~
 
 ## Short description
 
 ~~~
-What not eating meat really did: animals never bred, prices moved, land spared.
+You didn't save 200 animals. Here's what you actually did. It's still a lot.
 ~~~
 
 ## Full description
@@ -20,54 +20,49 @@ What not eating meat really did: animals never bred, prices moved, land spared.
 ~~~
 A ledger of the dead who stayed that way, on your account.
 
-Going vegan or vegetarian isn't a feeling. To the market, it's a demand shock. Meat Piety follows that shock all the way down, with real data and honest math.
+Most vegan calculators flatter you. Eat no chicken for a year, they say, and twenty-three chickens live. It's a lovely thought. It's also not how markets work.
 
-PICK THE DAY YOU STOPPED
-The count advances on its own from there. Nothing to log, nothing to remember.
+When you stop buying meat, the price drops a little. Someone else buys the cheaper meat. Farmers notice, eventually, and breed fewer animals. The animals you "saved" mostly went to someone else's plate; the ones you actually spared were never born at all. Meat Piety does that math, all of it, and tells you the truth. The truth turns out to be enough.
 
-THE MARKET
-• Meat, eggs and milk you didn't buy, at live retail prices in your currency
-• The price drop your absence caused, and the cheaper meat someone else ate because of it
-• What actually changed: production follows lost demand only partly, and the ledger says by how much
+Pick the day you stopped. The ledger counts from there and keeps counting.
 
-THE ANIMALS
-• Animals never bred, counted as whole lives, never fractions dressed up as bodies
-• Entire litters and clutches that never happened
-• Replacement breeders never born, and the offspring they would have had
-• Male chicks never hatched to be killed, and calves never sent to veal
-• Breeding animals culled early when prices fall, counted honestly as extra slaughter that unwinds
-• Fewer animals in barns right now, and the days of farm life never lived
+WHAT IT FOLLOWS
 
-THE FARMS
-Lower prices close small farms first. Meat Piety counts the cost: the animals still bred who now live in factory farms instead.
+The market. What you didn't buy, at live prices in your own currency. The price you pushed down. The meat that went to someone else because of it.
 
-THE LAND
-Emissions, cleared land and water spared, net of the tofu eaten instead. That includes the soy those animals would have eaten, turned into tofu that never needed to be.
+The animals. Not fractions of chickens: whole lives never begun. Every litter and clutch that didn't happen. The breeding animals who were never born, and the children they never had. The male chicks who were never hatched to be ground up. The calves who were never sent to veal. And the breeders culled early when prices fall, which the ledger counts honestly as extra slaughter before it gets better.
+
+The farms. Low prices close small farms first. So your abstention also moves the animals still being bred into factory barns. Meat Piety counts that too, because it happened.
+
+The land. Emissions, cleared land and water spared, after subtracting the tofu you ate instead. Plus the soy those animals would have eaten, which, it turns out, was most of the world's soy.
+
+The future. Herds projected against UN population curves. How long until they halve. What would be left if farming stopped: wild junglefowl, boar, mallards, the last free bison.
 
 YOUR REACH
-Add your Bluesky, Mastodon, YouTube, TikTok, Instagram or Facebook handle. Meat Piety reads your follower count and estimates how many people you've moved, and what they've spared. No handles, no guesswork: that chapter stays closed.
+
+Add your Bluesky, Mastodon, YouTube, TikTok, Instagram or Facebook handle and Meat Piety estimates who you've moved, and what they've spared. It doesn't guess. No handles, no chapter.
 
 THE WORLD
-The same model, run for every vegan and vegetarian alive. See how much cheaper meat is because of them, and how many animals their absence keeps from being bred.
 
-THE FUTURE
-Projections at 1, 5, 10 and 25 years. Herds charted against UN population curves under flat, slow and fast growth in abstention. And what would outlast farming if it stopped: wild junglefowl, boar, mallards, conservation bison.
+Every vegan and vegetarian alive, run through the same model. Meat is cheaper because of them. Some animals don't exist because of them. Both are true.
 
 THE BISON
-They keep a backward line. Ranching is most of why they still exist. Every other line here is a rescue. That one's a eulogy.
 
-HONEST BY DESIGN
-• Every input is sourced: FAOSTAT, USDA, BLS, UN population projections, Poore & Nemecek, Sentience Institute, IUCN and more
-• Uncertain figures carry ranges
-• What the model can't count is listed, not hidden
+One line runs backward. Ranching is most of why bison still exist; fewer eaten means fewer bred, not fewer killed. Every other line in the ledger is a rescue. That one's a eulogy.
 
-QUIET UNTIL IT MATTERS
-Milestones arrive as notifications only while you're away. Opening the app or changing a value never pings you.
+HONEST, ON PURPOSE
+
+Every number has a source: FAOSTAT, USDA, the Bureau of Labor Statistics, UN population projections, Poore & Nemecek, Sentience Institute, IUCN. Uncertain figures come with ranges. What the model can't count, it lists out loud.
+
+QUIET
+
+Milestones arrive only when you're not looking: your first whole pig, the day you outlived a broiler chicken. Opening the app never pings you.
 
 PRIVATE
-No account, no ads, no analytics, no tracking. Your start date stays on your phone.
 
-Monochrome, slow, deliberate. A calculator that takes the numbers as seriously as you took the decision.
+No account. No ads. No analytics. Your start date stays on your phone.
+
+Monochrome, unhurried, and a little grim. A calculator that takes the numbers as seriously as you took the decision.
 ~~~
 
 ## Category and tags

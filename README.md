@@ -39,7 +39,7 @@ Compose, built once and run on both Android and web.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, files, platform code, data flow, screen order, PWA, tests |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Building, releasing, deploying the worker, secrets, notifications |
 | [worker/README.md](worker/README.md) | Worker endpoints, platforms, BLS series |
-| [docs/PLAY_LISTING.md](docs/PLAY_LISTING.md) | Google Play title, short and full descriptions |
+| [docs/PLAY_LISTING.md](docs/PLAY_LISTING.md) | Google Play listing copy |
 | [PRIVACY.md](PRIVACY.md) | Privacy policy |
 
 ## Modules
