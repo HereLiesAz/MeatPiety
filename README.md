@@ -31,6 +31,8 @@ Compose, built once and run on both Android and web.
 - `projections()` (Economics.kt) — your ledger 1, 5, 10 and 25 years on, and
   one year of world abstention at that horizon's headcount, assuming 3% yearly
   growth (`ABSTAINER_GROWTH`, a stated guess).
+- `Footprint.kt` — CO₂e, land and water per kg (Poore & Nemecek 2018),
+  applied to net production cut, so it follows the same chain.
 - `Influence.kt` — linked handles → follower counts → reached (organic reach
   per platform, overlap-discounted) → persuaded → still abstaining (16%).
   No linked account with a readable count, no influence chapter.
@@ -40,8 +42,8 @@ Compose, built once and run on both Android and web.
   while the user is away: in the app it saves the ledger and marks every crossed milestone as known; a daily WorkManager job
   advances the day count and notifies for milestones crossed since. Opening
   the app or changing values never notifies. The web build doesn't notify.
-- `Storage.kt` — persisted start date (today − days entered), so the day
-  count advances daily on its own; diet is remembered too.
+- `Storage.kt` — the start date the user picks (Material date picker); days
+  are derived from it, so the count advances daily. Diet is remembered too.
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 

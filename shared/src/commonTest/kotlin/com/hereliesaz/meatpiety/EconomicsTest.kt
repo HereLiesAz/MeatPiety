@@ -131,3 +131,18 @@ class ProjectionTest {
         assertEquals(personalLayer(365 * 2, Diet.VEGAN).netSpared, p.first().personal.netSpared, 1e-9)
     }
 }
+
+class FootprintTest {
+    @Test
+    fun environmentFollowsNetProduction() {
+        val cow = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Cows" }
+        assertEquals(cow.netUnits * 0.4536 * 99.48, cow.environment.co2eKg, 1e-6)
+        assertEquals(0.0, personalLayer(30, Diet.VEGAN).environment.co2eKg)
+    }
+
+    @Test
+    fun startDateLabels() {
+        assertEquals("1 Jan 1970", StartDate.label(0))
+        assertEquals("11 Oct 2026", StartDate.label(20737))
+    }
+}

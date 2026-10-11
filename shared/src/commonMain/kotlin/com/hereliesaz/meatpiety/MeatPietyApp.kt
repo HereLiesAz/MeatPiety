@@ -1,6 +1,7 @@
 package com.hereliesaz.meatpiety
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +30,13 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
@@ -52,7 +58,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,7 +93,8 @@ private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(
 
 @Composable
 private fun LedgerScreen() {
-    var daysText by remember { mutableStateOf((StartDate.days() ?: 365).toString()) }
+    var startDay by remember { mutableStateOf(StartDate.epochDay() ?: (todayEpochDay() - 365)) }
+    var picking by remember { mutableStateOf(false) }
     var diet by remember { mutableStateOf(Storage.get("diet")?.let { d -> Diet.entries.firstOrNull { it.name == d } } ?: Diet.VEGAN) }
     val handles = remember { mutableStateMapOf<Platform, String>() }
     val lookups = remember { mutableStateMapOf<Platform, FollowerLookup>() }
@@ -100,7 +106,7 @@ private fun LedgerScreen() {
         LiveData.money()?.let { money = it }
     }
 
-    val days = daysText.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val days = (todayEpochDay() - startDay).toInt().coerceAtLeast(0)
     val accounts = handles.filterValues { it.isNotBlank() }.map { (p, h) ->
         LinkedAccount(p, h, lookups[p] ?: FollowerLookup.Pending)
     }
@@ -148,7 +154,14 @@ private fun LedgerScreen() {
                             ) { Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian") }
                         }
                     }
-                    NumberField(daysText, { daysText = it; it.toIntOrNull()?.let(StartDate::setDays) }, "Days lived this way · counts up daily", Modifier.fillMaxWidth())
+                    StartDateField(startDay, days) { picking = true }
+                    if (picking) {
+                        StartDatePicker(
+                            initial = startDay,
+                            onPick = { startDay = it; StartDate.setEpochDay(it); picking = false },
+                            onDismiss = { picking = false },
+                        )
+                    }
                 }
             }
             item(key = "accounts") {
@@ -344,23 +357,44 @@ private fun Eyebrow(text: String, color: Color = Piety.Fern) {
     Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color)
 }
 
+private const val DAY_MS = 86_400_000L
+
 @Composable
-private fun NumberField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(MAX_INPUT_DIGITS)) },
-        label = { Text(label) },
-        singleLine = true,
-        textStyle = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp, color = Piety.Oat),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Piety.Sage, unfocusedBorderColor = Piety.Rule,
-            focusedLabelColor = Piety.Sage, unfocusedLabelColor = Piety.Lichen, cursorColor = Piety.Sage,
-            focusedContainerColor = Piety.Loam, unfocusedContainerColor = Piety.Loam,
-        ),
-        modifier = modifier,
+private fun StartDateField(startDay: Long, days: Int, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Piety.Loam, shape)
+            .border(1.dp, Piety.Rule, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text("Began on", style = MaterialTheme.typography.labelSmall, color = Piety.Lichen)
+        Text(StartDate.label(startDay), style = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp), color = Piety.Oat)
+        Text("$days days so far · counts up daily", style = MaterialTheme.typography.bodySmall, color = Piety.Lichen)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StartDatePicker(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
+    val today = todayEpochDay()
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initial * DAY_MS,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis / DAY_MS <= today
+        },
     )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { state.selectedDateMillis?.let { onPick(it / DAY_MS) } ?: onDismiss() }) { Text("Set") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DatePicker(state = state, title = { Text("When did you start?", Modifier.padding(start = 24.dp, top = 16.dp)) })
+    }
 }
 
 @Composable
@@ -403,6 +437,10 @@ private fun LazyListScope.chapter(
                 style = MaterialTheme.typography.titleMedium, color = accent,
             )
             Text(
+                "Not emitted, cleared or drawn: ${layer.environment.describe()}",
+                style = MaterialTheme.typography.bodyMedium, color = Piety.Sprout,
+            )
+            Text(
                 "${format(layer.grossSpared)} not bought · ${money.format(layer.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent",
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
             )
@@ -440,7 +478,8 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
                 (bio?.let { " (${format(i.birthingsNotNeeded ?: 0.0)} ${it.birthing}s not needed)" } ?: "") +
                 " → ${format(i.netAnimals)} fewer slaughtered so far" +
                 (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
-                ". Price settles ${formatTiny(i.priceChange * 100)}%.",
+                ". Price settles ${formatTiny(i.priceChange * 100)}%. " +
+                "Spared: ${i.environment.describe()}.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }
@@ -598,6 +637,7 @@ private fun Recap(personal: Layer, influence: Layer?, world: Layer, money: Money
         ) {
             Tile("You", format(personal.netSpared), "fewer slaughtered", Piety.Sage, Modifier.weight(1f))
             if (influence != null) Tile("Your reach", format(influence.netSpared), "fewer slaughtered", Piety.Fern, Modifier.weight(1f))
+            Tile("Your footprint", "${format(personal.environment.co2eKg)} kg", "CO₂e not emitted", Piety.Sprout, Modifier.fillMaxWidth())
             Tile("Everyone abstaining", format(world.netSpared), "fewer slaughtered, same span", Piety.Sprout, Modifier.fillMaxWidth())
             if (top != null) Tile("Most spared", top.species.name, "${format(top.netAnimals)} of them", Piety.Sage, Modifier.weight(1f))
             if (steepest != null) {
