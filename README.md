@@ -44,7 +44,11 @@ Compose, built once and run on both Android and web.
 - `Milestones.kt` — thresholds the ledger crosses. `Notifier` only notifies
   while the user is away: in the app it saves the ledger and marks every crossed milestone as known; a daily WorkManager job
   advances the day count and notifies for milestones crossed since. Opening
-  the app or changing values never notifies. The web build doesn't notify.
+  the app or changing values never notifies. The web build is a PWA
+  (`wasmJsMain/resources`: manifest, `sw.js`, icons): the page hands the
+  service worker a 60-day schedule of upcoming milestones, and a daily
+  Periodic Background Sync shows the due ones while the app is closed
+  (installed PWA in Chromium; Safari/Firefox never notify).
 - `Storage.kt` — the start date the user picks (Material date picker); days
   are derived from it, so the count advances daily. Diet is remembered too.
 - `LiveData.kt` — client for the worker; everything falls back to the

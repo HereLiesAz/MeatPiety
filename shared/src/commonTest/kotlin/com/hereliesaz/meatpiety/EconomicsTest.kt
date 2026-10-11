@@ -159,3 +159,17 @@ class LineageTest {
         assertEquals(0.0, personalLayer(200, Diet.VEGAN).impacts.first { it.species.name == "Pigs" }.offspringOfUnbornBreeders)
     }
 }
+
+class ScheduleTest {
+    @Test
+    fun upcomingMilestonesLandOnTheirDay() {
+        val days = 40
+        val snapshot = LedgerSnapshot(days, Diet.VEGAN, null, Money.USD)
+        val now = milestones(days, personalLayer(days, Diet.VEGAN), null, worldLayer(days), Money.USD)
+        val upcoming = upcomingNotices(snapshot, now)
+        // Broilers are slaughtered at 47 days: outlived seven days from now.
+        val outlived = upcoming.single { it.second.id == "outlived:Chickens" }
+        assertEquals(todayEpochDay() + 7, outlived.first)
+        assertTrue(upcoming.none { (_, n) -> now.any { it.id == n.id } })
+    }
+}
