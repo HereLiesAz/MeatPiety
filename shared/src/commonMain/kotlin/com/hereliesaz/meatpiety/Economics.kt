@@ -36,6 +36,10 @@ data class Impact(
     val netAnimals: Double,
     val reboundUnits: Double,
     val breedersNotKept: Double?,
+    // Replacement breeders that would have been born into the herd over the
+    // span and weren't, and how many of the never-bred came from them.
+    val replacementsNeverBred: Double?,
+    val offspringOfUnbornBreeders: Double?,
     // Animals already born for your share when your demand left, whose
     // slaughter is pushed back while the breeding cut works through: a day's
     // share per elapsed day, up to slaughter age.
@@ -46,6 +50,8 @@ data class Impact(
     val usdPrice: Double,
 ) {
     val reboundAnimals get() = grossAnimals - netAnimals
+    /** Every animal not born: market animals plus the breeders that would have replaced the herd. */
+    val totalNeverBorn get() = neverBred + (replacementsNeverBred ?: 0.0)
     val newUsdPrice get() = usdPrice * (1 + priceChange)
 }
 
@@ -85,6 +91,21 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
     val cutPerDay = -quantityChange * market / 365.0 / species.unitsPerAnimal
     val netAnimals = cutPerDay * (days - lag).coerceAtLeast(0.0)
     val neverBred = cutPerDay * (days - gestation).coerceAtLeast(0.0)
+    val breeders = bio?.let { cutPerDay * 365.0 / it.offspringPerBreederYear }
+    // Days since the first missing replacement could have been born.
+    val sinceBirths = (days - gestation).coerceAtLeast(0.0)
+    val replacements = if (bio != null && breeders != null) breeders * bio.replacementRate * sinceBirths / 365.0 else null
+    // Litters those unborn replacements would have had: they join the herd
+    // continuously and breed from firstBreedingDays, until they make up the
+    // whole herd cut (after 1 / replacementRate years). Integrated in closed
+    // form. This is a breakdown of neverBred, not an addition: in steady
+    // state the smaller herd *is* the missing replacements.
+    val fromUnborn = if (bio != null && breeders != null) {
+        val x = (sinceBirths - bio.firstBreedingDays).coerceAtLeast(0.0)
+        val full = 365.0 / bio.replacementRate
+        val breederDays = if (x <= full) breeders * x * x / (2 * full) else breeders * (full / 2 + (x - full))
+        minOf(neverBred, breederDays * bio.offspringPerBreederYear / 365.0)
+    } else null
     val revenueBefore = market * usdPrice
     val revenueAfter = market * (1 + quantityChange) * usdPrice * (1 + priceChange)
     return Impact(
@@ -100,7 +121,9 @@ internal fun impact(species: Species, unitsPerYear: Double, years: Double, usdPr
         netAnimals = netAnimals,
         reboundUnits = grossUnits - netAnimals * species.unitsPerAnimal,
         // The breeding herd is cut as soon as the price signal arrives.
-        breedersNotKept = bio?.let { if (days > 0) cutPerDay * 365.0 / it.offspringPerBreederYear else 0.0 },
+        breedersNotKept = if (days > 0) breeders else breeders?.let { 0.0 },
+        replacementsNeverBred = replacements,
+        offspringOfUnbornBreeders = fromUnborn,
         stillAlive = bio?.let { cutPerDay * minOf(days, it.slaughterAgeDays.toDouble()) },
         birthingsNotNeeded = bio?.let { neverBred / it.perBirthing },
         producerRevenueLostUsd = (revenueBefore - revenueAfter) * years,

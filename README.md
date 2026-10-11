@@ -22,7 +22,10 @@ Compose, built once and run on both Android and web.
 - `Economics.kt` — a causal chain in time: skipped purchases of animals already
   bred → short-run price drop (supply fixed) → others buy them → breeding cut →
   births fall after gestation → slaughter falls after gestation + slaughter age →
-  long-run price. One global constant-elasticity market per species. A layer
+  long-run price. Never-born counts whole litters/clutches, plus replacement
+  breeders that would have been born into the herd (`replacementRate`), and
+  breaks out how many of the never-bred would have been those unborn
+  breeders' own offspring (from `firstBreedingDays`). One global constant-elasticity market per species. A layer
   removes demand; the new equilibrium gives the price change, rebound
   consumption, net animals not raised, breeders not kept, birthings not
   needed, producer revenue lost, and animals still alive: those already born

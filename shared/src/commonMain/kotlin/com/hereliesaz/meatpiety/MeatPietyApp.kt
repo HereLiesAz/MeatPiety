@@ -463,7 +463,7 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
-            Counter(impact.neverBred, MaterialTheme.typography.bodyLarge, colour) {
+            Counter(impact.totalNeverBorn, MaterialTheme.typography.bodyLarge, colour) {
                 "${wholeAnimals(it, days)} never bred"
             }
         }
@@ -475,7 +475,12 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
             "You skipped ${format(i.grossUnits)} ${i.species.unit}, ${format(i.grossAnimals)} animals' worth. " +
                 "${format(i.bredAnyway)} were already bred → the surplus dropped the price ${formatTiny(i.shortRunPriceChange * 100)}% " +
                 "→ others bought ${format(i.reboundAnimals)} of them cheap → farms cut breeding" +
-                (bio?.let { " (${format(i.birthingsNotNeeded ?: 0.0)} ${it.birthing}s not needed)" } ?: "") +
+                (bio?.let {
+                    " — ${format(i.breedersNotKept ?: 0.0)} fewer breeding animals, so ${format(i.birthingsNotNeeded ?: 0.0)} whole " +
+                        "${it.birthing}s of ${format(it.perBirthing)} never happen, ${format(i.replacementsNeverBred ?: 0.0)} replacement " +
+                        "breeders are never born, and ${format(i.offspringOfUnbornBreeders ?: 0.0)} of the never-bred would have been " +
+                        "their offspring"
+                } ?: "") +
                 " → ${format(i.netAnimals)} fewer slaughtered so far" +
                 (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
                 ". Price settles ${formatTiny(i.priceChange * 100)}%. " +

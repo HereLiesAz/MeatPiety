@@ -146,3 +146,16 @@ class FootprintTest {
         assertEquals("11 Oct 2026", StartDate.label(20737))
     }
 }
+
+class LineageTest {
+    @Test
+    fun unbornReplacementsAndTheirOffspring() {
+        val pig = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Pigs" }
+        val sinceBirths = 3650 - 114
+        assertEquals(pig.breedersNotKept!! * 0.45 * sinceBirths / 365.0, pig.replacementsNeverBred!!, 1e-9)
+        assertTrue(pig.offspringOfUnbornBreeders!! > 0 && pig.offspringOfUnbornBreeders!! <= pig.neverBred)
+        assertEquals(pig.neverBred + pig.replacementsNeverBred!!, pig.totalNeverBorn, 1e-9)
+        // Too early for any replacement to have bred.
+        assertEquals(0.0, personalLayer(200, Diet.VEGAN).impacts.first { it.species.name == "Pigs" }.offspringOfUnbornBreeders)
+    }
+}
