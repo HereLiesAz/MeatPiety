@@ -67,7 +67,7 @@ fun milestones(days: Int, personal: Layer, influence: Layer?, world: Layer, mone
             add(Notice("breakeven:${i.species.name}", "A ${i.species.singular()} farmer went under water", "World abstention pushes the price past the producer margin."))
         }
         i.breedersNotKept?.takeIf { it >= 1 }?.let {
-            add(Notice("breeders:${i.species.name}", "${format(it)} breeding ${i.species.name.lowercase()} retired", "Kept to make more ${i.species.name.lowercase()}; no longer needed."))
+            add(Notice("breeders:${i.species.name}", "${format(it)} fewer breeding ${i.species.name.lowercase()}", "Kept to make more ${i.species.name.lowercase()}; no longer needed."))
         }
     }
 }

@@ -44,3 +44,22 @@ internal fun formatWithThousands(n: Double): String {
     }
     return grouped.toString()
 }
+
+/**
+ * Animals come whole. [net] is an expected count: each purchase skipped
+ * shifts the odds that a producer's next order is cut by a whole batch, so
+ * a fraction is a share of one animal's probability, not part of a body.
+ * Reported as whole animals so far plus the wait for the next one.
+ */
+internal fun wholeAnimals(net: Double, days: Int): String {
+    if (net <= 0.0 || days <= 0) return "none yet"
+    val whole = kotlin.math.floor(net).toLong()
+    val perDay = net / days
+    val toNext = kotlin.math.ceil((whole + 1 - net) / perDay).toLong()
+    val wait = when {
+        toNext <= 1 -> "the next any day now"
+        toNext < 730 -> "the next in $toNext days"
+        else -> "the next in ${toNext / 365} years"
+    }
+    return if (whole == 0L) "${(net * 100).toInt()}% of the first · $wait" else "$whole · $wait"
+}
