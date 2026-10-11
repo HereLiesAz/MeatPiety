@@ -19,17 +19,38 @@ Compose, built once and run on both Android and web.
 - `Species.kt` — per-animal data: retail yield, U.S. and world per-capita
   consumption, price, demand/supply elasticities, producer margin, and
   reproduction (birthing size, offspring per breeder, gestation, slaughter age).
-- `Economics.kt` — one global constant-elasticity market per species. A layer
+- `Economics.kt` — a causal chain in time: skipped purchases of animals already
+  bred → short-run price drop (supply fixed) → others buy them → breeding cut →
+  births fall after gestation → slaughter falls after gestation + slaughter age →
+  long-run price. Never-born counts whole litters/clutches, plus replacement
+  breeders that would have been born into the herd (`replacementRate`), and
+  breaks out how many of the never-bred would have been those unborn
+  breeders' own offspring (from `firstBreedingDays`). One global constant-elasticity market per species. A layer
   removes demand; the new equilibrium gives the price change, rebound
   consumption, net animals not raised, breeders not kept, birthings not
-  needed, and producer revenue lost.
+  needed, producer revenue lost, and animals still alive: those already born
+  for that demand whose slaughter is postponed while breeding cuts work
+  through (a day's share per elapsed day, capped at slaughter age).
+- `projections()` (Economics.kt) — your ledger 1, 5, 10 and 25 years on, and
+  one year of world abstention at that horizon's headcount, assuming 3% yearly
+  growth (`ABSTAINER_GROWTH`, a stated guess).
+- `Footprint.kt` — CO₂e, land and water per kg (Poore & Nemecek 2018),
+  applied to net production cut, so it follows the same chain.
 - `Influence.kt` — linked handles → follower counts → reached (organic reach
   per platform, overlap-discounted) → persuaded → still abstaining (16%).
   No linked account with a readable count, no influence chapter.
 - `Money.kt` — prices are U.S. figures in USD, converted to the user's
   national currency (device locale on Android, visitor country on web).
-- `Milestones.kt` — notices for thresholds crossed; `Notifier` posts each
-  once as a system notification (Android shade, browser Notification API).
+- `Milestones.kt` — thresholds the ledger crosses. `Notifier` only notifies
+  while the user is away: in the app it saves the ledger and marks every crossed milestone as known; a daily WorkManager job
+  advances the day count and notifies for milestones crossed since. Opening
+  the app or changing values never notifies. The web build is a PWA
+  (`wasmJsMain/resources`: manifest, `sw.js`, icons): the page hands the
+  service worker a 60-day schedule of upcoming milestones, and a daily
+  Periodic Background Sync shows the due ones while the app is closed
+  (installed PWA in Chromium; Safari/Firefox never notify).
+- `Storage.kt` — the start date the user picks (Material date picker); days
+  are derived from it, so the count advances daily. Diet is remembered too.
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 
@@ -94,6 +115,9 @@ The Android launcher uses the full-bleed cow artwork in
 that image as the adaptive background and a transparent foreground.
 No rounded corners are baked into the asset; the device launcher applies
 its own adaptive mask and can crop the image's outermost details.
+`drawable/ic_stat_meatpiety.xml` is a single-colour cow head used as the
+notification status-bar icon and, inset, as the adaptive icon's
+`<monochrome>` layer for themed launchers.
 The manifest declares both `android:icon` and `android:roundIcon`.
 
 ## Running the web build

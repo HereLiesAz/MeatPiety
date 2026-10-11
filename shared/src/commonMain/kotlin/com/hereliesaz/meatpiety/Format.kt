@@ -2,9 +2,6 @@ package com.hereliesaz.meatpiety
 
 import kotlin.math.abs
 
-// Nine digits always parse as Int, so the field never shows a number the math ignores.
-internal const val MAX_INPUT_DIGITS = 9
-
 internal fun formatPercent(fraction: Double): String {
     val tenths = kotlin.math.round(fraction * 1000).toLong()
     val sign = if (tenths < 0) "-" else if (tenths > 0) "+" else ""

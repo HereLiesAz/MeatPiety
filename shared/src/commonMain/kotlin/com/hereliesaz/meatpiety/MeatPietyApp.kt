@@ -1,6 +1,7 @@
 package com.hereliesaz.meatpiety
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +30,13 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
@@ -52,7 +58,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +71,7 @@ import kotlinx.coroutines.delay
  *   accounts → chapters (yours, your reach [only with a linked account], the
  *   world), each a counting headline over log-scaled bars → buffalo eulogy →
  *   market → the animal (breeding) → precedent timeline → bento recap.
- *   Milestones crossed are posted as system notifications (Notifier).
+ *   Milestones are notified only while the user is away (Notifier).
  * All motion honours LocalReducedMotion.
  */
 
@@ -88,8 +93,9 @@ private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(
 
 @Composable
 private fun LedgerScreen() {
-    var daysText by remember { mutableStateOf("365") }
-    var diet by remember { mutableStateOf(Diet.VEGAN) }
+    var startDay by remember { mutableStateOf(StartDate.epochDay() ?: (todayEpochDay() - 365)) }
+    var picking by remember { mutableStateOf(false) }
+    var diet by remember { mutableStateOf(Storage.get("diet")?.let { d -> Diet.entries.firstOrNull { it.name == d } } ?: Diet.VEGAN) }
     val handles = remember { mutableStateMapOf<Platform, String>() }
     val lookups = remember { mutableStateMapOf<Platform, FollowerLookup>() }
     var prices by remember { mutableStateOf(emptyMap<String, Double>()) }
@@ -100,7 +106,7 @@ private fun LedgerScreen() {
         LiveData.money()?.let { money = it }
     }
 
-    val days = daysText.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val days = (todayEpochDay() - startDay).toInt().coerceAtLeast(0)
     val accounts = handles.filterValues { it.isNotBlank() }.map { (p, h) ->
         LinkedAccount(p, h, lookups[p] ?: FollowerLookup.Pending)
     }
@@ -110,7 +116,7 @@ private fun LedgerScreen() {
     val influence = remember(funnel, days, diet, prices) { funnel?.let { influenceLayer(it.stayed, days, diet, prices) } }
     val world = remember(days, prices) { worldLayer(days, prices) }
     val notices = remember(days, personal, influence, world, money) { milestones(days, personal, influence, world, money) }
-    LaunchedEffect(notices) { Notifier.postNew(notices) }
+    LaunchedEffect(notices) { Notifier.foreground(LedgerSnapshot(days, diet, funnel?.stayed, money), notices) }
 
     val state = rememberLazyListState()
     val reduced = LocalReducedMotion.current
@@ -138,7 +144,7 @@ private fun LedgerScreen() {
                         Diet.entries.forEachIndexed { index, option ->
                             SegmentedButton(
                                 selected = diet == option,
-                                onClick = { diet = option },
+                                onClick = { diet = option; Storage.set("diet", option.name) },
                                 shape = SegmentedButtonDefaults.itemShape(index, Diet.entries.size),
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = Piety.Moss, activeContentColor = Piety.Oat,
@@ -148,7 +154,14 @@ private fun LedgerScreen() {
                             ) { Text(if (option == Diet.VEGAN) "Vegan" else "Vegetarian") }
                         }
                     }
-                    NumberField(daysText, { daysText = it }, "Days lived this way", Modifier.fillMaxWidth())
+                    StartDateField(startDay, days) { picking = true }
+                    if (picking) {
+                        StartDatePicker(
+                            initial = startDay,
+                            onPick = { startDay = it; StartDate.setEpochDay(it); picking = false },
+                            onDismiss = { picking = false },
+                        )
+                    }
                 }
             }
             item(key = "accounts") {
@@ -213,6 +226,17 @@ private fun LedgerScreen() {
                     "the same $days days. At this scale the price falls far enough to matter.",
                 layer = world, accent = Piety.Sprout, money = money, days = days,
             )
+
+            item(key = "future-head") {
+                ChapterHead(
+                    "→", "If you keep going",
+                    "Your ledger at each horizon if you stay ${if (diet == Diet.VEGAN) "vegan" else "vegetarian"}, and the world's " +
+                        "if abstainers grow ${(ABSTAINER_GROWTH * 100).toInt()}% a year — a stated guess, not a forecast.",
+                )
+            }
+            itemsIndexed(projections(days, diet, prices), key = { _, it -> "future-${it.yearsAhead}" }) { i, p ->
+                ProjectionRow(p, money, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
+            }
 
             item(key = "eulogy") { Eulogy(Modifier.column().padding(vertical = 72.dp)) }
 
@@ -333,23 +357,44 @@ private fun Eyebrow(text: String, color: Color = Piety.Fern) {
     Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = color)
 }
 
+private const val DAY_MS = 86_400_000L
+
 @Composable
-private fun NumberField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(MAX_INPUT_DIGITS)) },
-        label = { Text(label) },
-        singleLine = true,
-        textStyle = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp, color = Piety.Oat),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Piety.Sage, unfocusedBorderColor = Piety.Rule,
-            focusedLabelColor = Piety.Sage, unfocusedLabelColor = Piety.Lichen, cursorColor = Piety.Sage,
-            focusedContainerColor = Piety.Loam, unfocusedContainerColor = Piety.Loam,
-        ),
-        modifier = modifier,
+private fun StartDateField(startDay: Long, days: Int, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Piety.Loam, shape)
+            .border(1.dp, Piety.Rule, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text("Began on", style = MaterialTheme.typography.labelSmall, color = Piety.Lichen)
+        Text(StartDate.label(startDay), style = MaterialTheme.typography.displayMedium.copy(fontSize = 30.sp), color = Piety.Oat)
+        Text("$days days so far · counts up daily", style = MaterialTheme.typography.bodySmall, color = Piety.Lichen)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StartDatePicker(initial: Long, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
+    val today = todayEpochDay()
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initial * DAY_MS,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis / DAY_MS <= today
+        },
     )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { state.selectedDateMillis?.let { onPick(it / DAY_MS) } ?: onDismiss() }) { Text("Set") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DatePicker(state = state, title = { Text("When did you start?", Modifier.padding(start = 24.dp, top = 16.dp)) })
+    }
 }
 
 @Composable
@@ -388,6 +433,14 @@ private fun LazyListScope.chapter(
             Counter(layer.netSpared, MaterialTheme.typography.displayLarge, accent) { format(it) }
             Text("fewer animals slaughtered", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
             Text(
+                "${format(layer.impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.stillAlive ?: 0.0 })} still alive right now, slaughter postponed",
+                style = MaterialTheme.typography.titleMedium, color = accent,
+            )
+            Text(
+                "Not emitted, cleared or drawn: ${layer.environment.describe()}",
+                style = MaterialTheme.typography.bodyMedium, color = Piety.Sprout,
+            )
+            Text(
                 "${format(layer.grossSpared)} not bought · ${money.format(layer.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent",
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
             )
@@ -410,15 +463,45 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
-            Counter(impact.netAnimals, MaterialTheme.typography.bodyLarge, colour) {
-                "${wholeAnimals(it, days)} fewer slaughtered"
+            Counter(impact.totalNeverBorn, MaterialTheme.typography.bodyLarge, colour) {
+                "${wholeAnimals(it, days)} never bred"
             }
         }
         LogBar(impact.grossAnimals, max, colour)
+        // The chain, each step feeding the next.
+        val i = impact
+        val bio = i.species.biology
         Text(
-            "${format(impact.grossUnits)} ${impact.species.unit} unbought · ${format(impact.grossAnimals)} animals' worth · " +
-                "${format(impact.reboundAnimals)} raised anyway for cheaper-meat buyers" +
-                (impact.fewerAliveAtOnce?.let { " · ${format(it)} fewer alive at any one time" } ?: ""),
+            "You skipped ${format(i.grossUnits)} ${i.species.unit}, ${format(i.grossAnimals)} animals' worth. " +
+                "${format(i.bredAnyway)} were already bred → the surplus dropped the price ${formatTiny(i.shortRunPriceChange * 100)}% " +
+                "→ others bought ${format(i.reboundAnimals)} of them cheap → farms cut breeding" +
+                (bio?.let {
+                    " — ${format(i.breedersNotKept ?: 0.0)} fewer breeding animals, so ${format(i.birthingsNotNeeded ?: 0.0)} whole " +
+                        "${it.birthing}s of ${format(it.perBirthing)} never happen, ${format(i.replacementsNeverBred ?: 0.0)} replacement " +
+                        "breeders are never born, and ${format(i.offspringOfUnbornBreeders ?: 0.0)} of the never-bred would have been " +
+                        "their offspring"
+                } ?: "") +
+                " → ${format(i.netAnimals)} fewer slaughtered so far" +
+                (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
+                ". Price settles ${formatTiny(i.priceChange * 100)}%. " +
+                "Spared: ${i.environment.describe()}.",
+            style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+        )
+    }
+}
+
+@Composable
+private fun ProjectionRow(p: Projection, money: Money, modifier: Modifier) {
+    val chicken = p.world.impacts.first { it.species.name == "Chickens" }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("In ${p.yearsAhead} year${if (p.yearsAhead == 1) "" else "s"}", style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
+            Text("${format(p.personal.netSpared)} fewer slaughtered", style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
+        }
+        Text(
+            "You: ${money.format(p.personal.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent. " +
+                "World: ${format(p.abstainers)} abstainers, ${format(p.world.netSpared)} fewer slaughtered that year, " +
+                "chicken ${formatPercent(chicken.priceChange)}.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }
@@ -559,6 +642,7 @@ private fun Recap(personal: Layer, influence: Layer?, world: Layer, money: Money
         ) {
             Tile("You", format(personal.netSpared), "fewer slaughtered", Piety.Sage, Modifier.weight(1f))
             if (influence != null) Tile("Your reach", format(influence.netSpared), "fewer slaughtered", Piety.Fern, Modifier.weight(1f))
+            Tile("Your footprint", "${format(personal.environment.co2eKg)} kg", "CO₂e not emitted", Piety.Sprout, Modifier.fillMaxWidth())
             Tile("Everyone abstaining", format(world.netSpared), "fewer slaughtered, same span", Piety.Sprout, Modifier.fillMaxWidth())
             if (top != null) Tile("Most spared", top.species.name, "${format(top.netAnimals)} of them", Piety.Sage, Modifier.weight(1f))
             if (steepest != null) {

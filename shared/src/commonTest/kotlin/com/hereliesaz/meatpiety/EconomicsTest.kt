@@ -20,14 +20,27 @@ class EconomicsTest {
     }
 
     @Test
-    fun netIsGrossTimesSupplyShareForSmallShocks() {
-        // For a marginal buyer, net = gross · es / (es + ed); the rest is rebound.
-        personalLayer(365, Diet.VEGAN).impacts.forEach {
+    fun netIsGrossTimesSupplyShareAfterTheLag() {
+        // For a marginal buyer, the long-run cut is gross · es / (es + ed), and it
+        // only reaches slaughter once the supply lag has passed; the rest is rebound.
+        val days = 3650
+        personalLayer(days, Diet.VEGAN).impacts.forEach {
             val s = it.species
             val share = s.supplyElasticity / (s.supplyElasticity + s.demandElasticity)
-            assertEquals(it.grossAnimals * share, it.netAnimals, it.grossAnimals * 1e-4)
+            val lag = s.biology?.supplyLagDays ?: 90
+            val expected = it.grossAnimals / days * share * (days - lag)
+            assertEquals(expected, it.netAnimals, expected * 1e-4)
             assertTrue(it.reboundAnimals > 0)
+            assertTrue(it.neverBred >= it.netAnimals)
         }
+    }
+
+    @Test
+    fun nothingIsSparedBeforeProducersCanRespond() {
+        val chicken = personalLayer(30, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        assertEquals(0.0, chicken.netAnimals)
+        assertEquals(chicken.grossAnimals, chicken.bredAnyway, 1e-9)
+        assertTrue(chicken.shortRunPriceChange < chicken.priceChange)
     }
 
     @Test
@@ -102,8 +115,61 @@ class WholeAnimalTest {
     }
 
     @Test
-    fun fewerAliveFollowsLittlesLaw() {
-        val chicken = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        assertEquals(chicken.netAnimals * 47 / 365.0, chicken.fewerAliveAtOnce!!, 1e-9)
+    fun stillAliveIsThePipelineCappedAtSlaughterAge() {
+        val year = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        val early = personalLayer(20, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
+        // A day's share per elapsed day, capped at slaughter age (47 days).
+        assertEquals(early.stillAlive!! / 20 * 47, year.stillAlive!!, 1e-9)
+    }
+}
+
+class ProjectionTest {
+    @Test
+    fun projectionsGrowWithTime() {
+        val p = projections(365, Diet.VEGAN)
+        assertTrue(p.zipWithNext().all { (a, b) -> b.personal.netSpared > a.personal.netSpared && b.abstainers > a.abstainers })
+        assertEquals(personalLayer(365 * 2, Diet.VEGAN).netSpared, p.first().personal.netSpared, 1e-9)
+    }
+}
+
+class FootprintTest {
+    @Test
+    fun environmentFollowsNetProduction() {
+        val cow = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Cows" }
+        assertEquals(cow.netUnits * 0.4536 * 99.48, cow.environment.co2eKg, 1e-6)
+        assertEquals(0.0, personalLayer(30, Diet.VEGAN).environment.co2eKg)
+    }
+
+    @Test
+    fun startDateLabels() {
+        assertEquals("1 Jan 1970", StartDate.label(0))
+        assertEquals("11 Oct 2026", StartDate.label(20737))
+    }
+}
+
+class LineageTest {
+    @Test
+    fun unbornReplacementsAndTheirOffspring() {
+        val pig = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Pigs" }
+        val sinceBirths = 3650 - 114
+        assertEquals(pig.breedersNotKept!! * 0.45 * sinceBirths / 365.0, pig.replacementsNeverBred!!, 1e-9)
+        assertTrue(pig.offspringOfUnbornBreeders!! > 0 && pig.offspringOfUnbornBreeders!! <= pig.neverBred)
+        assertEquals(pig.neverBred + pig.replacementsNeverBred!!, pig.totalNeverBorn, 1e-9)
+        // Too early for any replacement to have bred.
+        assertEquals(0.0, personalLayer(200, Diet.VEGAN).impacts.first { it.species.name == "Pigs" }.offspringOfUnbornBreeders)
+    }
+}
+
+class ScheduleTest {
+    @Test
+    fun upcomingMilestonesLandOnTheirDay() {
+        val days = 40
+        val snapshot = LedgerSnapshot(days, Diet.VEGAN, null, Money.USD)
+        val now = milestones(days, personalLayer(days, Diet.VEGAN), null, worldLayer(days), Money.USD)
+        val upcoming = upcomingNotices(snapshot, now)
+        // Broilers are slaughtered at 47 days: outlived seven days from now.
+        val outlived = upcoming.single { it.second.id == "outlived:Chickens" }
+        assertEquals(todayEpochDay() + 7, outlived.first)
+        assertTrue(upcoming.none { (_, n) -> now.any { it.id == n.id } })
     }
 }
