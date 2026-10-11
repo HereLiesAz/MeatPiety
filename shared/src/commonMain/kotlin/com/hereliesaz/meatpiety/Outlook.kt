@@ -56,6 +56,9 @@ data class ExtinctionOutlook(
     val herdAtEnd: Double?,
     val reservoir: String,
     val reservoirSize: Double,
+    /** Factory-farmed share today, and when commercial breeding ends. */
+    val factoryShareNow: Double?,
+    val factoryShareAtEnd: Double?,
 ) {
     val speciesSurvives get() = reservoirSize >= MINIMUM_VIABLE
 }
@@ -74,7 +77,11 @@ fun extinctionOutlook(growth: Double = ABSTAINER_GROWTH, horizon: Int = 200): Li
         val lnP0 = s.lnPrice(s.shiftIn(0, growth))
         val end = (1..horizon).firstOrNull { t -> 1 - exp(s.lnPrice(s.shiftIn(t, growth)) - lnP0) >= s.breakevenDrop }
         val herdAt = { t: Int -> herd * exp(s.supplyElasticity * (s.lnPrice(s.shiftIn(t, growth)) - lnP0)) }
-        ExtinctionOutlook(s, herd, end, end?.let(herdAt), reservoir, size)
+        val dropAt = { t: Int -> 1 - exp(s.lnPrice(s.shiftIn(t, growth)) - lnP0) }
+        ExtinctionOutlook(
+            s, herd, end, end?.let(herdAt), reservoir, size,
+            FACTORY_SHARE[s.name], end?.let { s.factoryShareAfter(dropAt(it)) },
+        )
     }
 
 /** Soy fed per kg of product (approximate; WWF soy-footprint estimates). */

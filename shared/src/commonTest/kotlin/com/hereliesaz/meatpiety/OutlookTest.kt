@@ -26,4 +26,13 @@ class OutlookTest {
         assertEquals(s.soyFreedKg * TOFU_KG_PER_SOY_KG, s.tofuKg, 1e-9)
         assertTrue(s.soyFreedKg > 0)
     }
+
+    @Test
+    fun squeezedMarginsMoveAnimalsIntoFactoryFarms() {
+        val world = worldLayer(365).impacts.first { it.species.name == "Cows" }
+        assertTrue(world.shiftedToFactory > 0)
+        assertEquals(0.0, worldLayer(365).impacts.first { it.species.name == "Buffalo" }.shiftedToFactory)
+        val o = extinctionOutlook().first { it.species.name == "Cows" }
+        assertEquals(1.0, o.factoryShareAtEnd!!, 1e-9)
+    }
 }

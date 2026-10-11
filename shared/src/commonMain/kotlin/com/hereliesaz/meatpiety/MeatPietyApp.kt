@@ -450,6 +450,10 @@ private fun LazyListScope.chapter(
                 "${format(layer.impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.stillAlive ?: 0.0 })} still alive right now, slaughter postponed",
                 style = MaterialTheme.typography.titleMedium, color = accent,
             )
+            if (layer.shiftedToFactory > 0) Text(
+                "The cost: ${format(layer.shiftedToFactory)} animals still bred now live in factory farms, not smaller ones — lower prices close the small farms first.",
+                style = MaterialTheme.typography.bodyMedium, color = Piety.Clay,
+            )
             Text(
                 "Not emitted, cleared or drawn: ${layer.environment.describe()}",
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Sprout,
@@ -497,7 +501,9 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
                 } ?: "") +
                 " → ${format(i.netAnimals)} fewer slaughtered so far" +
                 (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
-                ". Price settles ${formatTiny(i.priceChange * 100)}%. " +
+                ". Price settles ${formatTiny(i.priceChange * 100)}%" +
+                (if (i.shiftedToFactory > 0) " → thinner margins push small farms out: ${format(i.shiftedToFactory)} of the animals still bred are raised in factory farms instead" else "") +
+                ". " +
                 "Spared: ${i.environment.describe()}.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
@@ -535,6 +541,7 @@ private fun OutlookRow(o: ExtinctionOutlook, modifier: Modifier) {
         Text(
             "${format(o.herdNow)} alive in farms today" +
                 (o.herdAtEnd?.let { " · ${format(it)} when breeding stops, then culled or left to age out" } ?: "") +
+                (o.factoryShareNow?.let { now -> " · factory-farmed ${(now * 100).toInt()}% today" + (o.factoryShareAtEnd?.let { ", ${(it * 100).toInt()}% by the end" } ?: "") } ?: "") +
                 ". Lives on in ${o.reservoir} (~${format(o.reservoirSize)}): " +
                 if (o.speciesSurvives) "the species survives." else "too few to persist.",
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
