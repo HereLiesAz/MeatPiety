@@ -386,7 +386,7 @@ private fun LazyListScope.chapter(
     item(key = "$key-total") {
         Column(Modifier.column().padding(bottom = 24.dp).reveal(120)) {
             Counter(layer.netSpared, MaterialTheme.typography.displayLarge, accent) { format(it) }
-            Text("fewer animals slaughtered", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
+            Text("animals still alive", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
             Text(
                 "${format(layer.grossSpared)} not bought · ${money.format(layer.impacts.sumOf { it.grossUnits * it.usdPrice })} not spent",
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
@@ -411,7 +411,7 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
         Row(verticalAlignment = Alignment.Bottom) {
             Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
             Counter(impact.netAnimals, MaterialTheme.typography.bodyLarge, colour) {
-                "${wholeAnimals(it, days)} fewer slaughtered"
+                "${wholeAnimals(it, days)} still alive"
             }
         }
         LogBar(impact.grossAnimals, max, colour)
@@ -557,9 +557,9 @@ private fun Recap(personal: Layer, influence: Layer?, world: Layer, money: Money
             verticalArrangement = Arrangement.spacedBy(12.dp),
             maxItemsInEachRow = 2,
         ) {
-            Tile("You", format(personal.netSpared), "fewer slaughtered", Piety.Sage, Modifier.weight(1f))
-            if (influence != null) Tile("Your reach", format(influence.netSpared), "fewer slaughtered", Piety.Fern, Modifier.weight(1f))
-            Tile("Everyone abstaining", format(world.netSpared), "fewer slaughtered, same span", Piety.Sprout, Modifier.fillMaxWidth())
+            Tile("You", format(personal.netSpared), "still alive", Piety.Sage, Modifier.weight(1f))
+            if (influence != null) Tile("Your reach", format(influence.netSpared), "still alive", Piety.Fern, Modifier.weight(1f))
+            Tile("Everyone abstaining", format(world.netSpared), "still alive, same span", Piety.Sprout, Modifier.fillMaxWidth())
             if (top != null) Tile("Most spared", top.species.name, "${format(top.netAnimals)} of them", Piety.Sage, Modifier.weight(1f))
             if (steepest != null) {
                 Tile("Steepest price drop", steepest.species.name, "${formatPercent(steepest.priceChange)} · ${money.format(steepest.newUsdPrice)}", Piety.Clay, Modifier.weight(1f))
