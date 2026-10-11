@@ -8,8 +8,9 @@ enum class Diet { VEGAN, VEGETARIAN }
  * bends when demand moves.
  *
  * Units: [unit] is what the retail price is quoted in ("lb", "dozen eggs",
- * "gallon milk"). [unitsPerAnimal] converts animals to that unit; for hens and
- * dairy cows it is a year of output from one animal, not a carcass.
+ * "gallon milk"). [unitsPerAnimal] converts animals to that unit: a carcass for
+ * meat, a productive lifetime of output for hens and dairy cows, so every
+ * count is whole animals, never animal-years.
  */
 data class Species(
     val name: String,
@@ -47,6 +48,18 @@ data class Species(
     // Bison exist mostly because people buy them. Less demand means fewer bred.
     val existsBecauseOfDemand: Boolean = false,
     val biology: Biology? = null,
+    // World-average yield per animal where it differs sharply from the U.S.
+    // (FAOSTAT: world cow milk ÷ dairy cows ≈ 655 gal/yr vs ≈ 2,790 in the
+    // U.S.; world eggs ÷ laying hens ≈ 17.9 dozen/yr vs 25). Used for the
+    // influence and world layers. Null = same as U.S.
+    val worldUnitsPerAnimal: Double? = null,
+    // Seafood only: share farmed (FAO SOFIA 2024: aquaculture is ~51% of
+    // aquatic animal production). Wild catch is quota-bound, so demand cuts
+    // there move price, not catch; only the farmed share changes production.
+    val farmedShare: Double = 1.0,
+    // Seafood only: wild forage fish caught for feed per [unit] farmed
+    // (fish-in:fish-out ≈ 0.3 kg/kg, IFFO/FAO) ÷ ~20 g per anchovy-class fish.
+    val feedFishPerUnit: Double = 0.0,
 )
 
 /** Reproduction, used to turn animals-not-raised into breeders and births not needed. */
@@ -68,9 +81,16 @@ data class Biology(
     val replacementRate: Double,
     // Age at which a replacement first breeds.
     val firstBreedingDays: Int,
+    // Producers of eggs and milk cut output by culling early, not by waiting
+    // out a slaughter age. Null for meat animals.
+    val outputLagDays: Int? = null,
+    // Males born per female kept who never enter the product: male layer
+    // chicks killed at hatch (about one per pullet), male dairy calves sent
+    // to veal or beef (~0.45 a cow-year). Null where males are raised for meat.
+    val malesPerAnimal: Double? = null,
 ) {
-    /** How long a breeding decision takes to show up as fewer animals at market. */
-    val supplyLagDays: Int get() = gestationDays + slaughterAgeDays
+    /** How long a breeding decision takes to show up at market. */
+    val supplyLagDays: Int get() = outputLagDays ?: (gestationDays + slaughterAgeDays)
 }
 
 internal val SPECIES = listOf(
@@ -83,12 +103,12 @@ internal val SPECIES = listOf(
     Species(
         "Fish", "lb", usPerCapita = 12.5, unitsPerAnimal = 0.81, worldToUsRatio = 0.9,
         usdPrice = 12.00, demandElasticity = 0.5, supplyElasticity = 0.3, breakevenDrop = 0.20,
-        requiresVeganism = false,
+        requiresVeganism = false, farmedShare = 0.51, feedFishPerUnit = 0.3 * 0.4536 / 0.02,
     ),
     Species(
         "Shellfish", "lb", usPerCapita = 8.0, unitsPerAnimal = 0.061, worldToUsRatio = 0.9,
         usdPrice = 11.00, demandElasticity = 0.6, supplyElasticity = 0.3, breakevenDrop = 0.20,
-        requiresVeganism = false,
+        requiresVeganism = false, farmedShare = 0.51, feedFishPerUnit = 0.3 * 0.4536 / 0.02,
     ),
     Species(
         "Turkeys", "lb", usPerCapita = 15.0, unitsPerAnimal = 21.4, worldToUsRatio = 0.15,
@@ -121,18 +141,21 @@ internal val SPECIES = listOf(
         biology = Biology("lambing", 1.5, 1.3, 150, 210, 12 * 365, 0.2, 240),
     ),
     Species(
+        // A hen lays about one year before she is culled, so a hen-year is a hen.
         "Egg-Laying Hens", "dozen eggs", usPerCapita = 23.3, unitsPerAnimal = 25.0, worldToUsRatio = 0.64,
         usdPrice = 3.78, demandElasticity = 0.82, supplyElasticity = 8.29, breakevenDrop = 0.20,
-        requiresVeganism = true,
-        // About half of hatched layer chicks are male and are culled at hatch;
-        // 60 is pullets kept per breeder hen per year.
-        biology = Biology("clutch", 12.0, 60.0, 21, 540, 8 * 365, 1.0, 168),
+        requiresVeganism = true, worldUnitsPerAnimal = 17.9,
+        // 60 pullets kept per breeder hen per year; each pullet's brother is
+        // killed at hatch.
+        biology = Biology("clutch", 12.0, 60.0, 21, 540, 8 * 365, 1.0, 168, outputLagDays = 90, malesPerAnimal = 1.0),
     ),
     Species(
-        "Dairy Cows", "gallon milk", usPerCapita = 76.0, unitsPerAnimal = 2_790.0, worldToUsRatio = 0.43,
+        // Lifetime output: ~2,790 gal a year over ~1 / 0.35 = 2.9 milking years.
+        "Dairy Cows", "gallon milk", usPerCapita = 76.0, unitsPerAnimal = 2_790.0 / 0.35, worldToUsRatio = 0.43,
         usdPrice = 4.00, demandElasticity = 0.78, supplyElasticity = 0.99, breakevenDrop = 0.15,
-        requiresVeganism = true,
-        biology = Biology("calving", 1.0, 0.9, 283, 1_800, 20 * 365, 0.35, 450),
+        requiresVeganism = true, worldUnitsPerAnimal = 655.0 / 0.35,
+        // ~0.9 calves a year for 2.9 years, half male.
+        biology = Biology("calving", 1.0, 0.9, 283, 1_800, 20 * 365, 0.35, 450, outputLagDays = 90, malesPerAnimal = 0.45 / 0.35),
     ),
     Species(
         "Buffalo", "lb", usPerCapita = 0.096, unitsPerAnimal = 400.0, worldToUsRatio = 0.01,
@@ -144,9 +167,9 @@ internal val SPECIES = listOf(
 
 internal fun Species.eatenBy(diet: Diet) = diet == Diet.VEGAN || !requiresVeganism
 
-// Global vegan/vegetarian population, order-of-magnitude estimates from Ipsos,
-// the Vegan Society, and national vegetarianism surveys (dominated by India's
-// ~500 million vegetarians). Nobody is counting precisely.
+// Global vegan/vegetarian population. No authoritative count exists: Ipsos
+// (2018, 28 countries) found 5% vegetarian and 3% vegan; most vegetarians are
+// in India. Order-of-magnitude, and labelled so in the app.
 internal const val VEGANS_WORLDWIDE = 100_000_000L
 internal const val VEGETARIANS_WORLDWIDE = 800_000_000L
 internal const val WORLD_POPULATION = 8_100_000_000L

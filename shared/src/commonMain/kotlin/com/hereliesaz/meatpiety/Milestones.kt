@@ -63,9 +63,6 @@ fun milestones(days: Int, personal: Layer, influence: Layer?, world: Layer, mone
         if (cents >= 0.01) {
             add(Notice("price:${i.species.name}", "${i.species.name} is ${money.format(cents)} cheaper", "Per ${i.species.unit}, because of people like you."))
         }
-        if (i.belowBreakeven) {
-            add(Notice("breakeven:${i.species.name}", "A ${i.species.singular()} farmer went under water", "World abstention pushes the price past the producer margin."))
-        }
         i.breedersNotKept?.takeIf { it >= 1 }?.let {
             add(Notice("breeders:${i.species.name}", "${format(it)} fewer breeding ${i.species.name.lowercase()}", "Kept to make more ${i.species.name.lowercase()}; no longer needed."))
         }

@@ -77,6 +77,19 @@ Compose, built once and run on both Android and web.
 | Minimum viable population | Traill, Bradshaw & Brook (2007): 4,169 |
 | Footprint | Poore & Nemecek (2018) |
 
+Model corrections after audit: world prices are measured against a world
+without today's abstainers; hens and dairy cows count whole lifetimes (with
+world yields for world-scope layers), plus male chicks and calves; early
+culls of breeding animals count as extra slaughter that unwinds; "fewer in
+barns" waits for gestation; wild catch is quota-bound, so only the farmed
+share of seafood responds, and the feed fish behind it are counted; less
+dairy means more beef cattle (~20% of beef is dairy-herd); the footprint is
+net of protein-matched tofu; supply responses carry a ±0.1 range; the herd
+outlook grows the market ~1.1%/yr (OECD-FAO) and offers flat, 1% and 3%
+abstainer scenarios instead of an extinction date. Not counted, and said so
+in the app: trade, subsidies, herd cycles, bycatch, crop deaths, wild-animal
+effects of land use, and differences in capacity to suffer.
+
 Still unsourced, and labelled so in the app: world tofu output (no
 authoritative figure; 2–5 Mt industry range), global vegan/vegetarian
 headcount, abstainer growth (Gallup shows the US share flat), fish and

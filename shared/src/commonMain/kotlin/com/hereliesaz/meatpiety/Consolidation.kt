@@ -43,8 +43,15 @@ val Impact.shiftedToFactory: Double
     get() {
         val f0 = FACTORY_SHARE[species.name] ?: return 0.0
         val f1 = species.factoryShareAfter(-priceChange) ?: return 0.0
-        val stillRaised = species.globalMarketUnitsPerYear() / species.unitsPerAnimal * years - netAnimals
-        return (f1 - f0) * stillRaised.coerceAtLeast(0.0)
+        val perAnimal = if (worldScope) species.worldUnitsPerAnimal ?: species.unitsPerAnimal else species.unitsPerAnimal
+        val stillRaised = species.globalMarketUnitsPerYear() / perAnimal * years - netAnimals
+        // U.S. shares overstate the world's (74% of land animals vs ~99% in
+        // the U.S., Sentience Institute); scale them for world-scope layers.
+        val scale = if (worldScope) GLOBAL_FACTORY_SHARE / US_FACTORY_SHARE else 1.0
+        return (f1 - f0) * scale * stillRaised.coerceAtLeast(0.0)
     }
+
+internal const val GLOBAL_FACTORY_SHARE = 0.74
+internal const val US_FACTORY_SHARE = 0.99
 
 val Layer.shiftedToFactory get() = impacts.sumOf { it.shiftedToFactory }

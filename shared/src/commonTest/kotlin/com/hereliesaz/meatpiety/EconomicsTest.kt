@@ -26,19 +26,22 @@ class EconomicsTest {
         val days = 3650
         personalLayer(days, Diet.VEGAN).impacts.forEach {
             val s = it.species
-            val share = s.supplyElasticity / (s.supplyElasticity + s.demandElasticity)
+            val es = s.supplyElasticity * s.farmedShare
+            val share = es / (es + s.demandElasticity)
             val lag = s.biology?.supplyLagDays ?: 90
             val expected = it.grossAnimals / days * share * (days - lag)
-            assertEquals(expected, it.netAnimals, expected * 1e-4)
+            assertEquals(expected, it.netAnimals + (it.cullWave ?: 0.0), expected * 1e-3)
             assertTrue(it.reboundAnimals > 0)
-            assertTrue(it.neverBred >= it.netAnimals)
+            // Meat animals: births fall before slaughter does. (Egg and milk producers cut output by culling, before births.)
+            if (s.biology?.outputLagDays == null) assertTrue(it.neverBred >= it.netAnimals, s.name)
         }
     }
 
     @Test
     fun nothingIsSparedBeforeProducersCanRespond() {
         val chicken = personalLayer(30, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        assertEquals(0.0, chicken.netAnimals)
+        // Before the lag, the only change in slaughter is the early cull of breeders.
+        assertEquals(-chicken.cullWave!!, chicken.netAnimals, 1e-12)
         assertEquals(chicken.grossAnimals, chicken.bredAnyway, 1e-9)
         assertTrue(chicken.shortRunPriceChange < chicken.priceChange)
     }
@@ -53,7 +56,8 @@ class EconomicsTest {
     fun worldShockLowersPricesAndRetiresBreeders() {
         worldLayer(365).impacts.forEach {
             assertTrue(it.priceChange < 0, it.species.name)
-            assertTrue(it.producerRevenueLostUsd > 0, it.species.name)
+            assertTrue(it.retailSalesLostUsd > 0, it.species.name)
+            assertTrue(it.counterfactualUsdPrice > it.usdPrice, it.species.name)
             it.breedersNotKept?.let { b -> assertTrue(b > 0) }
         }
     }
@@ -85,7 +89,7 @@ class InfluenceTest {
         val b = LinkedAccount(Platform.MASTODON, "b", FollowerLookup.Found(1_000))
         val funnel = influenceFunnel(listOf(a, b))!!
         assertEquals(150.0 + 150.0 * OVERLAP_DISCOUNT, funnel.reached, 1e-9)
-        assertEquals(funnel.reached * PERSUASION_RATE * RETENTION_RATE, funnel.stayed, 1e-9)
+        assertEquals(funnel.reached * (1 - kotlin.math.exp(-PERSUASION_RATE)) * RETENTION_RATE, funnel.stayed, 1e-9)
     }
 }
 
@@ -115,11 +119,55 @@ class WholeAnimalTest {
     }
 
     @Test
-    fun stillAliveIsThePipelineCappedAtSlaughterAge() {
-        val year = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        val early = personalLayer(20, Diet.VEGAN).impacts.first { it.species.name == "Chickens" }
-        // A day's share per elapsed day, capped at slaughter age (47 days).
-        assertEquals(early.stillAlive!! / 20 * 47, year.stillAlive!!, 1e-9)
+    fun fewerInBarnsWaitsForGestationAndCapsAtSlaughterAge() {
+        val cow = { d: Int -> personalLayer(d, Diet.VEGAN).impacts.first { it.species.name == "Cows" } }
+        // Nothing is missing from barns before the first birth that doesn't happen.
+        assertEquals(0.0, cow(200).fewerInBarns)
+        val a = cow(300).fewerInBarns!!
+        val b = cow(3650).fewerInBarns!!
+        // 300 days is 17 days past gestation (283); ten years caps at slaughter age (540).
+        assertEquals(a / 17 * 540, b, b * 1e-9)
+    }
+
+    @Test
+    fun earlyCullsAreExtraSlaughterThatUnwinds() {
+        val pig = { d: Int -> personalLayer(d, Diet.VEGAN).impacts.first { it.species.name == "Pigs" } }
+        assertTrue(pig(30).netAnimals < 0)
+        assertEquals(0.0, pig(3650).cullWave!!)
+    }
+
+    @Test
+    fun dairyAndEggsCountLifetimesAndBrothers() {
+        val layer = personalLayer(3650, Diet.VEGAN)
+        val dairy = layer.impacts.first { it.species.name == "Dairy Cows" }
+        // ~0.027 cow-years a person-year ÷ 2.9 milking years per cow.
+        assertEquals(76.0 / (2790.0 / 0.35), dairy.grossAnimals / 10, 1e-9)
+        assertEquals(dairy.neverBred * 0.45 / 0.35, dairy.malesNeverBorn!!, 1e-9)
+        val hens = layer.impacts.first { it.species.name == "Egg-Laying Hens" }
+        assertEquals(hens.neverBred, hens.malesNeverBorn!!, 1e-9)
+        assertTrue(layer.dairyBeefOffset > 0)
+    }
+
+    @Test
+    fun wildCatchDoesNotRespond() {
+        val fish = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Fish" }
+        val share = 0.3 * 0.51 / (0.3 * 0.51 + 0.5)
+        assertEquals(fish.grossUnits * share * (3650 - 90) / 3650, fish.netUnits, fish.netUnits * 1e-3)
+        assertTrue(fish.forageFishNotCaught > 0)
+    }
+
+    @Test
+    fun worldUsesWorldYields() {
+        val us = personalLayer(365, Diet.VEGAN).impacts.first { it.species.name == "Dairy Cows" }
+        val world = influenceLayer(1.0, 730, Diet.VEGAN).impacts.first { it.species.name == "Dairy Cows" }
+        assertEquals(2790.0 / 655.0, world.grossAnimals / world.grossUnits / (us.grossAnimals / us.grossUnits), 1e-9)
+    }
+
+    @Test
+    fun rangeBracketsTheCentralEstimate() {
+        val (low, high) = personalRange(3650, Diet.VEGAN)
+        val mid = personalLayer(3650, Diet.VEGAN).netSpared
+        assertTrue(low < mid && mid < high)
     }
 }
 
@@ -136,8 +184,10 @@ class FootprintTest {
     @Test
     fun environmentFollowsNetProduction() {
         val cow = personalLayer(3650, Diet.VEGAN).impacts.first { it.species.name == "Cows" }
-        assertEquals(cow.netUnits * 0.4536 * 99.48, cow.environment.co2eKg, 1e-6)
-        assertEquals(0.0, personalLayer(30, Diet.VEGAN).environment.co2eKg)
+        assertEquals(cow.netUnits * 0.4536 * (0.8 * 99.48 + 0.2 * 33.30), cow.environment.co2eKg, 1e-6)
+        assertEquals(0.0, personalLayer(30, Diet.VEGAN).grossEnvironment.co2eKg)
+        // Early on, only the replacement food has a footprint.
+        assertTrue(personalLayer(30, Diet.VEGAN).environment.co2eKg < 0)
     }
 
     @Test

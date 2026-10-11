@@ -7,14 +7,16 @@ import kotlin.math.pow
 /*
  * Two long views built on the same market model as the ledger.
  *
- * Extinction outlook: abstainers grow at [ABSTAINER_GROWTH] a year until the
- * whole world abstains. Each year's demand shift sets the herd through the
- * long-run equilibrium (herd ∝ (1 − shift)^(es / (es + ed))). Commercial
- * breeding ends when the price has fallen past the producer margin
- * (Species.breakevenDrop) relative to today. After that the species lives on
- * only in its non-commercial reservoir: wild ancestors, feral, heritage and
- * sanctuary animals. Farmed breeds go; the species only goes if that
- * reservoir is too small to persist (under ~5,000, Traill et al. 2007).
+ * Herd outlook: the potential market grows with population and income
+ * ([MARKET_GROWTH]); abstainers grow at a chosen scenario rate and take a
+ * share s(t) of it. In the long-run equilibrium the herd scales as
+ * [(1 + g)^t · (1 − s(t)) / (1 − s0)]^(es / (es + ed)) relative to today, and
+ * the price as the same base to 1 / (es + ed). A constant-elasticity market
+ * shrinks but never reaches zero, so the model gives a trajectory (when the
+ * herd halves, what is left in 50 and 100 years), not an extinction date. What
+ * would outlast farming is the non-commercial reservoir: wild ancestors,
+ * feral, heritage and sanctuary animals, judged against the Traill et al.
+ * (2007) minimum viable population where anyone has counted.
  *
  * Soy and tofu: most soy feeds animals; the animals you didn't eat free their
  * feed, which is shown as tofu it could have made.
@@ -65,40 +67,59 @@ internal val RESERVOIRS: Map<String, Pair<String, Double?>> = mapOf(
 /** Traill, Bradshaw & Brook 2007: median minimum viable population, 4,169. */
 internal const val MINIMUM_VIABLE = 4_169.0
 
-data class ExtinctionOutlook(
+// Global meat consumption growth from population and income: OECD-FAO
+// Agricultural Outlook 2023–2032 projects ~12% over the decade (~1.1%/yr).
+internal const val MARKET_GROWTH = 0.011
+// World population growth, ~0.8%/yr (UN World Population Prospects 2024).
+internal const val POPULATION_GROWTH = 0.008
+
+data class HerdOutlook(
     val species: Species,
     val herdNow: Double,
-    /** Years from now until commercial breeding stops, or null within [horizon]. */
-    val yearsToCommercialEnd: Int?,
-    val herdAtEnd: Double?,
+    /** Herd relative to today at 25, 50 and 100 years. */
+    val herdIn25: Double,
+    val herdIn50: Double,
+    val herdIn100: Double,
+    /** Years until the herd halves, or null within [horizon]. */
+    val yearsToHalf: Int?,
     val reservoir: String,
     val reservoirSize: Double?,
-    /** Factory-farmed share today, and when commercial breeding ends. */
     val factoryShareNow: Double?,
-    val factoryShareAtEnd: Double?,
+    /** Factory share in 100 years, if prices have fallen by then. */
+    val factoryShareIn100: Double?,
 ) {
     /** Null when the reservoir is uncounted. */
-    val speciesSurvives get() = reservoirSize?.let { it >= MINIMUM_VIABLE }
+    val reservoirViable get() = reservoirSize?.let { it >= MINIMUM_VIABLE }
 }
 
-private fun Species.shiftIn(years: Int, growth: Double): Double {
-    val abstainers = (if (requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE) * (1 + growth).pow(years)
-    return (abstainers / WORLD_POPULATION).coerceIn(0.0, 0.99)
+private fun Species.abstainerShare(years: Int, growth: Double): Double {
+    val a0 = (if (requiresVeganism) VEGANS_WORLDWIDE else VEGANS_WORLDWIDE + VEGETARIANS_WORLDWIDE).toDouble() / WORLD_POPULATION
+    return (a0 * ((1 + growth) / (1 + POPULATION_GROWTH)).pow(years)).coerceIn(0.0, 0.99)
 }
 
-private fun Species.lnPrice(shift: Double) = ln(1 - shift) / (supplyElasticity + demandElasticity)
+/** ln of demand at year t relative to today. */
+private fun Species.lnDemand(t: Int, growth: Double) =
+    t * ln(1 + MARKET_GROWTH) + ln(1 - abstainerShare(t, growth)) - ln(1 - abstainerShare(0, growth))
 
-fun extinctionOutlook(growth: Double = ABSTAINER_GROWTH, horizon: Int = 200): List<ExtinctionOutlook> =
+fun herdOutlook(growth: Double = DEFAULT_GROWTH, horizon: Int = 300): List<HerdOutlook> =
     SPECIES.mapNotNull { s ->
         val herd = GLOBAL_HERD[s.name] ?: return@mapNotNull null
         val (reservoir, size) = RESERVOIRS.getValue(s.name)
-        val lnP0 = s.lnPrice(s.shiftIn(0, growth))
-        val end = (1..horizon).firstOrNull { t -> 1 - exp(s.lnPrice(s.shiftIn(t, growth)) - lnP0) >= s.breakevenDrop }
-        val herdAt = { t: Int -> herd * exp(s.supplyElasticity * (s.lnPrice(s.shiftIn(t, growth)) - lnP0)) }
-        val dropAt = { t: Int -> 1 - exp(s.lnPrice(s.shiftIn(t, growth)) - lnP0) }
-        ExtinctionOutlook(
-            s, herd, end, end?.let(herdAt), reservoir, size,
-            FACTORY_SHARE[s.name], end?.let { s.factoryShareAfter(dropAt(it)) },
+        val es = s.supplyElasticity * s.farmedShare
+        val cef = es / (es + s.demandElasticity)
+        val ratio = { t: Int -> exp(cef * s.lnDemand(t, growth)) }
+        val priceDrop100 = 1 - exp(s.lnDemand(100, growth) / (es + s.demandElasticity))
+        HerdOutlook(
+            species = s,
+            herdNow = herd,
+            herdIn25 = herd * ratio(25),
+            herdIn50 = herd * ratio(50),
+            herdIn100 = herd * ratio(100),
+            yearsToHalf = (1..horizon).firstOrNull { ratio(it) <= 0.5 },
+            reservoir = reservoir,
+            reservoirSize = size,
+            factoryShareNow = FACTORY_SHARE[s.name],
+            factoryShareIn100 = if (priceDrop100 > 0) s.factoryShareAfter(priceDrop100) else FACTORY_SHARE[s.name],
         )
     }
 
@@ -112,7 +133,8 @@ fun extinctionOutlook(growth: Double = ABSTAINER_GROWTH, horizon: Int = 200): Li
 internal val SOY_KG_PER_KG = mapOf(
     "Chickens" to 0.956, "Turkeys" to 0.956, "Ducks" to 0.956,
     "Egg-Laying Hens" to 0.58, "Pigs" to 0.415, "Cows" to 0.206, "Buffalo" to 0.206,
-    "Fish" to 0.951,
+    // Farmed fish only; wild-caught fish eat no soy.
+    "Fish" to 0.951 * 0.51,
 )
 
 // 77% of the world's soy feeds animals (Ritchie & Roser, Our World in Data, 2021).
@@ -120,13 +142,15 @@ internal const val SOY_FED_TO_ANIMALS = 0.77
 // Firm tofu yield: ~1.9–2.4 kg per kg dry soybeans in food-science trials.
 internal const val TOFU_KG_PER_SOY_KG = 2.0
 // No authoritative world tofu figure exists (FAO doesn't track it); industry
-// estimates run 2–5 Mt. 3 Mt is a midpoint, labelled as such in the UI.
-internal const val GLOBAL_TOFU_KG = 3e9
+// estimates run 2–5 Mt. 3.5 Mt is the midpoint, labelled as such in the UI.
+// Feed soy is mostly crushed meal, so "tofu it could have made" assumes the
+// beans, not the meal, are freed.
+internal const val GLOBAL_TOFU_KG = 3.5e9
 
-data class SoyLedger(val soyFreedKg: Double) {
+data class SoyLedger(val soyFreedKg: Double, val years: Double) {
     val tofuKg get() = soyFreedKg * TOFU_KG_PER_SOY_KG
-    /** Share of a year's world tofu that freed feed could make. */
-    val shareOfWorldTofu get() = tofuKg / GLOBAL_TOFU_KG
+    /** Share of a year's world tofu that one year of freed feed could make. */
+    val shareOfWorldTofu get() = if (years > 0) tofuKg / years / GLOBAL_TOFU_KG else 0.0
 }
 
 /** Feed soy no longer grown for the animals this layer stopped producing. */
@@ -134,4 +158,4 @@ val Layer.soy: SoyLedger
     get() = SoyLedger(impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { i ->
         val kg = FOOTPRINTS[i.species.name]?.let { i.netUnits * it.kgPerUnit } ?: 0.0
         kg * (SOY_KG_PER_KG[i.species.name] ?: 0.0)
-    })
+    }, years)
