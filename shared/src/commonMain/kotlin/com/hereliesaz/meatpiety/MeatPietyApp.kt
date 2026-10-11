@@ -415,7 +415,7 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
         Row(verticalAlignment = Alignment.Bottom) {
             Text(impact.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
             Counter(impact.netAnimals, MaterialTheme.typography.bodyLarge, colour) {
-                "${wholeAnimals(it, days)} fewer slaughtered"
+                "${wholeAnimals(it, days)} never bred"
             }
         }
         LogBar(impact.grossAnimals, max, colour)
