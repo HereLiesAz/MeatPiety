@@ -100,6 +100,7 @@ private fun LedgerScreen() {
     val lookups = remember { mutableStateMapOf<Platform, FollowerLookup>() }
     var prices by remember { mutableStateOf(emptyMap<String, Double>()) }
     var money by remember { mutableStateOf(Money.USD) }
+    var growth by remember { mutableStateOf(DEFAULT_GROWTH) }
 
     LaunchedEffect(Unit) {
         prices = LiveData.prices()
@@ -110,9 +111,10 @@ private fun LedgerScreen() {
     val accounts = handles.filterValues { it.isNotBlank() }.map { (p, h) ->
         LinkedAccount(p, h, lookups[p] ?: FollowerLookup.Pending)
     }
-    val funnel = influenceFunnel(accounts)
+    val funnel = influenceFunnel(accounts, days / 365.0)
 
     val personal = remember(days, diet, prices) { personalLayer(days, diet, prices) }
+    val personalBand = remember(days, diet, prices) { personalRange(days, diet, prices) }
     val influence = remember(funnel, days, diet, prices) { funnel?.let { influenceLayer(it.stayed, days, diet, prices) } }
     val world = remember(days, prices) { worldLayer(days, prices) }
     val notices = remember(days, personal, influence, world, money) { milestones(days, personal, influence, world, money) }
@@ -194,7 +196,7 @@ private fun LedgerScreen() {
                 key = "yours", number = "01", title = "Your ledger",
                 caption = "Measured against a standard U.S. diet. Gross is what you didn't buy; net is what the " +
                     "market actually stopped raising once cheaper prices tempted someone else.",
-                layer = personal, accent = Piety.Sage, money = money, days = days,
+                layer = personal, accent = Piety.Sage, money = money, days = days, band = personalBand,
             ) {
                 Pictogram(
                     count = personal.netSpared, cap = 200, color = Piety.Sage,
@@ -231,22 +233,38 @@ private fun LedgerScreen() {
                 ChapterHead(
                     "→", "If you keep going",
                     "Your ledger at each horizon if you stay ${if (diet == Diet.VEGAN) "vegan" else "vegetarian"}, and the world's " +
-                        "if abstainers grow ${(ABSTAINER_GROWTH * 100).toInt()}% a year — a stated guess, not a forecast.",
+                        "under the abstainer-growth scenario below. No one measures a global trend; Gallup finds the U.S. share flat.",
                 )
             }
-            itemsIndexed(projections(days, diet, prices), key = { _, it -> "future-${it.yearsAhead}" }) { i, p ->
+            item(key = "growth-pick") {
+                Row(Modifier.column(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GROWTH_SCENARIOS.forEach { g ->
+                        val on = g == growth
+                        Text(
+                            if (g == 0.0) "Flat" else "+${(g * 100).toInt()}% a year",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (on) Piety.Soil else Piety.Lichen,
+                            modifier = Modifier
+                                .background(if (on) Piety.Sage else Piety.Loam, RoundedCornerShape(12.dp))
+                                .clickable { growth = g }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
+            itemsIndexed(projections(days, diet, prices, growth), key = { _, it -> "future-${it.yearsAhead}" }) { i, p ->
                 ProjectionRow(p, money, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
             }
 
             item(key = "extinct-head") {
                 ChapterHead(
                     "†", "How long they last",
-                    "If abstainers keep growing ${(ABSTAINER_GROWTH * 100).toInt()}% a year, each year's drop in demand shrinks the herd " +
-                        "and the price. When the price falls past the producer margin, commercial breeding ends and the farmed breeds go. " +
-                        "The species survives only where something lives outside the market. Projections, not prophecy.",
+                    "The market follows world population (UN projections: a peak near 10.3 billion in the 2080s) and slowly rising meat per person (OECD-FAO); abstainers take a growing share under " +
+                        "the scenario above. The herd follows. A market never prices a species to zero, so this gives the herd's " +
+                        "path, not an extinction date — and what would outlast farming if people stopped keeping them.",
                 )
             }
-            itemsIndexed(extinctionOutlook(), key = { _, it -> "ext-${it.species.name}" }) { i, o ->
+            itemsIndexed(herdOutlook(growth), key = { _, it -> "ext-${it.species.name}" }) { i, o ->
                 OutlookRow(o, Modifier.column().padding(vertical = 10.dp).reveal(delayMillis = (i % 4) * 60))
             }
 
@@ -288,6 +306,19 @@ private fun LedgerScreen() {
             }
             itemsIndexed(EXTINCTION_PRECEDENTS, key = { _, it -> "p-${it.species}" }) { _, p ->
                 PrecedentRow(p, state, "p-${p.species}", parallax = !reduced)
+            }
+
+            item(key = "caveats") {
+                Column(Modifier.column().padding(top = 72.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Eyebrow("What this doesn't count")
+                    Text(
+                        "Trade and regional prices (one world market stands in), subsidies and price supports, herd cycles " +
+                            "and cold storage (one lag stands in), wild-catch bycatch and discards, animals killed in crop " +
+                            "farming, what spared land does for wild animals, and how much each animal can suffer: a shrimp " +
+                            "and a cow each count as one. Every figure is a central estimate from the sources in the README.",
+                        style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+                    )
+                }
             }
 
             item(key = "recap") { Recap(personal, influence, world, money, Modifier.column().padding(top = 96.dp)) }
@@ -439,6 +470,7 @@ private fun LazyListScope.chapter(
     accent: Color,
     money: Money,
     days: Int,
+    band: Pair<Double, Double>? = null,
     figure: (@Composable () -> Unit)? = null,
 ) {
     item(key = "$key-head") { ChapterHead(number, title, caption) }
@@ -446,8 +478,18 @@ private fun LazyListScope.chapter(
         Column(Modifier.column().padding(bottom = 24.dp).reveal(120)) {
             Counter(layer.netSpared, MaterialTheme.typography.displayLarge, accent) { format(it) }
             Text("fewer animals slaughtered", style = MaterialTheme.typography.titleMedium, color = Piety.Lichen)
+            if (band != null) Text(
+                "Plausibly ${format(band.first)}–${format(band.second)}, as farm supply responds less or more than the central estimate.",
+                style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
+            )
             Text(
-                "${format(layer.impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.stillAlive ?: 0.0 })} still alive right now, slaughter postponed",
+                "${format(layer.neverBorn)} never born, counting replacement breeders and the male chicks and calves bred alongside them" +
+                    (if (layer.dairyBeefOffset > 0.005) " · ${format(layer.dairyBeefOffset)} more beef cattle raised to replace dairy beef, already subtracted" else ""),
+                style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
+            )
+            Text(
+                "${format(layer.impacts.filterNot { it.species.existsBecauseOfDemand }.sumOf { it.fewerInBarns ?: 0.0 })} fewer in barns right now · " +
+                    "${format(layer.impacts.sumOf { it.animalDaysNotLived ?: 0.0 })} days of farm life never lived",
                 style = MaterialTheme.typography.titleMedium, color = accent,
             )
             if (layer.shiftedToFactory > 0) Text(
@@ -455,7 +497,8 @@ private fun LazyListScope.chapter(
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Clay,
             )
             Text(
-                "Not emitted, cleared or drawn: ${layer.environment.describe()}",
+                "Net of the tofu eaten instead: ${layer.environment.describe()} not emitted, cleared or drawn " +
+                    "(${format(layer.grossEnvironment.co2eKg)} kg CO₂e before the replacement).",
                 style = MaterialTheme.typography.bodyMedium, color = Piety.Sprout,
             )
             Text(
@@ -500,7 +543,10 @@ private fun LedgerRow(impact: Impact, max: Double, accent: Color, days: Int, mod
                         "their offspring"
                 } ?: "") +
                 " → ${format(i.netAnimals)} fewer slaughtered so far" +
-                (i.stillAlive?.let { ", ${format(it)} still alive, slaughter postponed" } ?: "") +
+                (i.cullWave?.takeIf { it > 0.005 }?.let { " (after ${format(it)} breeding animals culled early, which the cut hasn't yet paid back)" } ?: "") +
+                (i.fewerInBarns?.let { ", ${format(it)} fewer in barns right now" } ?: "") +
+                (i.malesNeverBorn?.takeIf { it > 0 }?.let { ", ${format(it)} ${if (i.species.name == "Egg-Laying Hens") "male chicks never hatched to be killed" else "male calves never born for veal or beef"}" } ?: "") +
+                (if (i.forageFishNotCaught > 0) ", ${format(i.forageFishNotCaught)} wild feed fish left in the sea" else "") +
                 ". Price settles ${formatTiny(i.priceChange * 100)}%" +
                 (if (i.shiftedToFactory > 0) " → thinner margins push small farms out: ${format(i.shiftedToFactory)} of the animals still bred are raised in factory farms instead" else "") +
                 ". " +
@@ -528,22 +574,26 @@ private fun ProjectionRow(p: Projection, money: Money, modifier: Modifier) {
 }
 
 @Composable
-private fun OutlookRow(o: ExtinctionOutlook, modifier: Modifier) {
+private fun OutlookRow(o: HerdOutlook, modifier: Modifier) {
     val year = StartDate.label(todayEpochDay()).substringAfterLast(' ').toInt()
+    val pct = { v: Double -> "${(v / o.herdNow * 100).toInt()}%" }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(o.species.name, style = MaterialTheme.typography.titleMedium, color = Piety.Oat, modifier = Modifier.weight(1f))
             Text(
-                o.yearsToCommercialEnd?.let { "farming ends ~${year + it}" } ?: "farming continues",
+                o.yearsToHalf?.let { "half gone by ~${year + it}" } ?: "${pct(o.herdIn100)} in 100 years",
                 style = MaterialTheme.typography.bodyLarge, color = if (o.species.existsBecauseOfDemand) Piety.Clay else Piety.Sprout,
             )
         }
         Text(
-            "${format(o.herdNow)} alive in farms today" +
-                (o.herdAtEnd?.let { " · ${format(it)} when breeding stops, then culled or left to age out" } ?: "") +
-                (o.factoryShareNow?.let { now -> " · factory-farmed ${(now * 100).toInt()}% today" + (o.factoryShareAtEnd?.let { ", ${(it * 100).toInt()}% by the end" } ?: "") } ?: "") +
-                ". Lives on in ${o.reservoir} (~${format(o.reservoirSize)}): " +
-                if (o.speciesSurvives) "the species survives." else "too few to persist.",
+            "${format(o.herdNow)} in farms today → ${pct(o.herdIn25)} in 25 years, ${pct(o.herdIn50)} in 50, ${pct(o.herdIn100)} in 100" +
+                (o.factoryShareNow?.let { now -> " · factory-farmed ${(now * 100).toInt()}% today" + (o.factoryShareIn100?.let { ", ${(it * 100).toInt()}% in 100 years" } ?: "") } ?: "") +
+                ". If farming stopped, it would live on in ${o.reservoir}" +
+                when (o.reservoirViable) {
+                    true -> " (~${format(o.reservoirSize!!)}): enough to persist."
+                    false -> " (~${format(o.reservoirSize!!)}): too few to persist."
+                    null -> ": nobody has counted, so survival can't be called."
+                },
             style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
         )
     }
@@ -623,24 +673,18 @@ private fun MarketRow(world: Impact, personal: Impact?, money: Money, modifier: 
             Text(formatPercent(world.priceChange), style = MaterialTheme.typography.bodyLarge, color = Piety.Sage)
         }
         Text(
-            "${money.format(world.usdPrice)} → ${money.format(world.newUsdPrice)} per $unit · " +
-                "demand down ${formatPercent(world.demandShift).removePrefix("+")} · " +
-                "${money.format(world.producerRevenueLostUsd)} producer revenue gone",
+            "Without the world's abstainers: ${money.format(world.counterfactualUsdPrice)} per $unit; today ${money.format(world.usdPrice)} · " +
+                "demand ${formatPercent(world.demandShift).removePrefix("+")} lower · " +
+                "${money.format(world.retailSalesLostUsd)} in retail sales gone over the span",
             style = MaterialTheme.typography.bodyMedium, color = Piety.Lichen,
         )
         // Linear scale here: price changes all sit within one order of magnitude.
-        LinearBar(abs(world.priceChange) / 0.4, if (world.belowBreakeven) Piety.Clay else Piety.Fern)
+        LinearBar(abs(world.priceChange) / 0.4, Piety.Fern)
         if (personal != null) {
             Text(
                 "Your part: ${formatTiny(personal.priceChange * 100)}% on price, " +
-                    "${money.format(personal.producerRevenueLostUsd)} off producers' takings.",
+                    "${money.format(personal.retailSalesLostUsd)} of retail sales.",
                 style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
-            )
-        }
-        if (world.belowBreakeven) {
-            Text(
-                "Past an illustrative producer-margin line — herds would get thinned, not just margins.",
-                style = MaterialTheme.typography.bodySmall, color = Piety.Clay,
             )
         }
     }

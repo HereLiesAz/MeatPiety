@@ -13,10 +13,16 @@ package com.hereliesaz.meatpiety
  * consolidation), the magnitude is not.
  */
 
-/** Factory-farmed share of animals today (Sentience Institute, U.S., 2019; lower elsewhere). */
+/**
+ * Factory-farmed share today: Sentience Institute, US Factory Farming
+ * Estimates (updated Nov 2024): broilers >99.9%, layers 98.3%, turkeys 99.8%,
+ * pigs 98.6%, cows 74.9% (dairy not broken out, so the cow figure is used).
+ * Globally the share is lower (74% of land animals, 2019). Ducks and sheep
+ * have no estimate and are left out. Bison are pasture-raised.
+ */
 internal val FACTORY_SHARE = mapOf(
-    "Chickens" to 0.999, "Egg-Laying Hens" to 0.98, "Turkeys" to 0.998, "Ducks" to 0.9,
-    "Pigs" to 0.983, "Cows" to 0.704, "Dairy Cows" to 0.75, "Sheep & Lambs" to 0.1, "Buffalo" to 0.0,
+    "Chickens" to 0.999, "Egg-Laying Hens" to 0.983, "Turkeys" to 0.998,
+    "Pigs" to 0.986, "Cows" to 0.749, "Dairy Cows" to 0.749, "Buffalo" to 0.0,
 )
 
 internal fun Species.factoryShareAfter(priceDrop: Double): Double? {
@@ -37,8 +43,15 @@ val Impact.shiftedToFactory: Double
     get() {
         val f0 = FACTORY_SHARE[species.name] ?: return 0.0
         val f1 = species.factoryShareAfter(-priceChange) ?: return 0.0
-        val stillRaised = species.globalMarketUnitsPerYear() / species.unitsPerAnimal * years - netAnimals
-        return (f1 - f0) * stillRaised.coerceAtLeast(0.0)
+        val perAnimal = if (worldScope) species.worldUnitsPerAnimal ?: species.unitsPerAnimal else species.unitsPerAnimal
+        val stillRaised = species.globalMarketUnitsPerYear() / perAnimal * years - netAnimals
+        // U.S. shares overstate the world's (74% of land animals vs ~99% in
+        // the U.S., Sentience Institute); scale them for world-scope layers.
+        val scale = if (worldScope) GLOBAL_FACTORY_SHARE / US_FACTORY_SHARE else 1.0
+        return (f1 - f0) * scale * stillRaised.coerceAtLeast(0.0)
     }
+
+internal const val GLOBAL_FACTORY_SHARE = 0.74
+internal const val US_FACTORY_SHARE = 0.99
 
 val Layer.shiftedToFactory get() = impacts.sumOf { it.shiftedToFactory }

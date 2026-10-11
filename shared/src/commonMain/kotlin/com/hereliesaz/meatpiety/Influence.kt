@@ -28,11 +28,12 @@ sealed interface FollowerLookup {
 data class LinkedAccount(val platform: Platform, val handle: String, val lookup: FollowerLookup)
 
 // Of the people who regularly see you live this way, the share who go vegan or
-// vegetarian because of it over the span. A guess with a straight face; the
-// literature measures leaflets and ads, not friends.
+// vegetarian because of it per year of exposure. A guess with a straight face;
+// the literature measures leaflets and ads, not friends.
 internal const val PERSUASION_RATE = 0.002
 
-// Faunalytics (2014): 84% of people who go vegetarian or vegan quit.
+// Faunalytics (2014): 84% of people who go vegetarian or vegan eventually quit;
+// applied as the share still abstaining, which overstates lapses early on.
 internal const val RETENTION_RATE = 0.16
 
 // Audiences overlap across platforms; everyone past your biggest audience
@@ -48,12 +49,12 @@ data class InfluenceFunnel(
 )
 
 /** Null when no account has a follower count, so the influence chapter is omitted. */
-fun influenceFunnel(accounts: List<LinkedAccount>): InfluenceFunnel? {
+fun influenceFunnel(accounts: List<LinkedAccount>, years: Double = 1.0): InfluenceFunnel? {
     val found = accounts.mapNotNull { a -> (a.lookup as? FollowerLookup.Found)?.let { a.platform to it.followers } }
     if (found.isEmpty()) return null
     val reachedEach = found.map { (p, n) -> n * p.reach }.sortedDescending()
     val reached = reachedEach.first() + reachedEach.drop(1).sum() * OVERLAP_DISCOUNT
-    val persuaded = reached * PERSUASION_RATE
+    val persuaded = reached * (1 - kotlin.math.exp(-PERSUASION_RATE * years))
     return InfluenceFunnel(
         followers = found.sumOf { it.second },
         reached = reached,

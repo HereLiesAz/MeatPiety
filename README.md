@@ -60,6 +60,43 @@ Compose, built once and run on both Android and web.
 - `LiveData.kt` — client for the worker; everything falls back to the
   built-in figures offline.
 
+## Sources
+
+| Figure | Source |
+|---|---|
+| Live animals (2024) | FAOSTAT QCL, World: stocks, laying hens, dairy cows |
+| Demand elasticities | USDA ERS meta-analysis (Chen & Abler 2012) |
+| Supply response | Norwood & Lusk, *Compassion by the Pound* (2011), cumulative elasticity factors |
+| Factory-farmed shares | Sentience Institute, US Factory Farming Estimates (2024) |
+| Soy per kg | WWF-NL / Profundo, *European soy supply* (2021) |
+| Soy to feed (77%) | Ritchie & Roser, Our World in Data (2021) |
+| Bison, mouflon, junglefowl | IUCN Red List / BirdLife |
+| Mallards | USFWS Waterfowl Population Status (2025) |
+| Wild turkeys | NWTF (2016) |
+| Wild boar / feral swine | ENETWILD (2025); USDA APHIS |
+| Minimum viable population | Traill, Bradshaw & Brook (2007): 4,169 |
+| Footprint | Poore & Nemecek (2018) |
+
+Model corrections after audit: world prices are measured against a world
+without today's abstainers; hens and dairy cows count whole lifetimes (with
+world yields for world-scope layers), plus male chicks and calves; early
+culls of breeding animals count as extra slaughter that unwinds; "fewer in
+barns" waits for gestation; wild catch is quota-bound, so only the farmed
+share of seafood responds, and the feed fish behind it are counted; less
+dairy means more beef cattle (~20% of beef is dairy-herd); the footprint is
+net of protein-matched tofu; supply responses carry a ±0.1 range; the herd
+outlook, projections and ledgers size the market by world population (UN WPP 2024
+medium variant: peak ~10.3 bn in the 2080s; `Population.kt`) times per-capita
+intake growing ~0.2%/yr (OECD-FAO), and offers flat, 1% and 3%
+abstainer scenarios instead of an extinction date. Not counted, and said so
+in the app: trade, subsidies, herd cycles, bycatch, crop deaths, wild-animal
+effects of land use, and differences in capacity to suffer.
+
+Still unsourced, and labelled so in the app: world tofu output (no
+authoritative figure; 2–5 Mt industry range), global vegan/vegetarian
+headcount, abstainer growth (Gallup shows the US share flat), fish and
+shellfish elasticities, producer margins, small-farm margin.
+
 ## Worker
 
 `worker/` is a Cloudflare Worker at `meatpiety.hereliesaz.workers.dev`,
