@@ -1,122 +1,46 @@
 # Meat Piety
 
-A calculator for vegans and vegetarians: enter how many days you've lived
-that way and it works out what that did to each animal's market and
-population — meat not bought, the price drop it causes, how much of the slack
-cheaper prices tempt someone else into eating, the animals actually never
-raised, the breeders retired and births never needed. It runs the same model
-for the people you've influenced (only once you link a social account) and
-for the world's vegans and vegetarians, and keeps a backward line for buffalo,
-whose numbers survive on ranching demand rather than despite it.
+A ledger of the dead who stayed that way, on your account.
+
+Meat Piety works out what not eating animals has actually done. Your
+abstention was not a moral feeling; it was a demand shock. Pick the day you
+stopped, and it follows the shock all the way down:
+
+- **The market.** Meat you didn't buy, the price drop it caused, and the
+  cheaper meat someone else ate because of it.
+- **The animals.** The ones never bred. That includes whole litters and
+  clutches, the replacement breeders who were never born, the male chicks
+  who were never hatched to be killed, and the calves never sent to veal.
+- **The farms.** The squeeze that closes small farms first, which leaves the
+  animals still bred in factory barns.
+- **The land.** Emissions, cleared land and water spared, net of the tofu
+  eaten instead.
+- **The future.** Herds projected against UN population curves, and what
+  would outlast farming if it stopped.
+
+The same model runs for the people you've influenced, once you link a social
+account, and for every vegan and vegetarian alive. Bison keep a backward
+line: they survive because people eat them.
+
+Every number is sourced, ranged where it's uncertain, and honest about what
+it can't count. Live U.S. retail prices are converted to your currency.
+Notifications arrive only while you're away. It runs on Android and as an
+installable web app.
 
 The calculator itself — `shared/src/commonMain` — is Kotlin Multiplatform
 Compose, built once and run on both Android and web.
 
-## Model
+## Documentation
 
-`shared/src/commonMain`:
-
-- `Species.kt` — per-animal data: retail yield, U.S. and world per-capita
-  consumption, price, demand/supply elasticities, producer margin, and
-  reproduction (birthing size, offspring per breeder, gestation, slaughter age).
-- `Economics.kt` — a causal chain in time: skipped purchases of animals already
-  bred → short-run price drop (supply fixed) → others buy them → breeding cut →
-  births fall after gestation → slaughter falls after gestation + slaughter age →
-  long-run price. Never-born counts whole litters/clutches, plus replacement
-  breeders that would have been born into the herd (`replacementRate`), and
-  breaks out how many of the never-bred would have been those unborn
-  breeders' own offspring (from `firstBreedingDays`). One global constant-elasticity market per species. A layer
-  removes demand; the new equilibrium gives the price change, rebound
-  consumption, net animals not raised, breeders not kept, birthings not
-  needed, producer revenue lost, and animals still alive: those already born
-  for that demand whose slaughter is postponed while breeding cuts work
-  through (a day's share per elapsed day, capped at slaughter age).
-- `projections()` (Economics.kt) — your ledger 1, 5, 10 and 25 years on, and
-  one year of world abstention at that horizon's headcount, assuming 3% yearly
-  growth (`ABSTAINER_GROWTH`, a stated guess).
-- `Footprint.kt` — CO₂e, land and water per kg (Poore & Nemecek 2018),
-  applied to net production cut, so it follows the same chain.
-- `Outlook.kt` — years until commercial breeding ends per species (price
-  past producer margin as abstainers grow), what survives outside the market,
-  and feed soy freed by animals never bred, as tofu.
-- `Consolidation.kt` — lower prices close smaller, higher-cost farms first;
-  counts animals still bred that move into factory farms (Sentience Institute
-  shares; small-farm margin = half the industry's, illustrative).
-- `Influence.kt` — linked handles → follower counts → reached (organic reach
-  per platform, overlap-discounted) → persuaded → still abstaining (16%).
-  No linked account with a readable count, no influence chapter.
-- `Money.kt` — prices are U.S. figures in USD, converted to the user's
-  national currency (device locale on Android, visitor country on web).
-- `Milestones.kt` — thresholds the ledger crosses. `Notifier` only notifies
-  while the user is away: in the app it saves the ledger and marks every crossed milestone as known; a daily WorkManager job
-  advances the day count and notifies for milestones crossed since. Opening
-  the app or changing values never notifies. The web build is a PWA
-  (`wasmJsMain/resources`: manifest, `sw.js`, icons): the page hands the
-  service worker a 60-day schedule of upcoming milestones, and a daily
-  Periodic Background Sync shows the due ones while the app is closed
-  (installed PWA in Chromium; Safari/Firefox never notify).
-- `Storage.kt` — the start date the user picks (Material date picker); days
-  are derived from it, so the count advances daily. Diet is remembered too.
-- `LiveData.kt` — client for the worker; everything falls back to the
-  built-in figures offline.
-
-## Sources
-
-| Figure | Source |
+| Document | Covers |
 |---|---|
-| Live animals (2024) | FAOSTAT QCL, World: stocks, laying hens, dairy cows |
-| Demand elasticities | USDA ERS meta-analysis (Chen & Abler 2012) |
-| Supply response | Norwood & Lusk, *Compassion by the Pound* (2011), cumulative elasticity factors |
-| Factory-farmed shares | Sentience Institute, US Factory Farming Estimates (2024) |
-| Soy per kg | WWF-NL / Profundo, *European soy supply* (2021) |
-| Soy to feed (77%) | Ritchie & Roser, Our World in Data (2021) |
-| Bison, mouflon, junglefowl | IUCN Red List / BirdLife |
-| Mallards | USFWS Waterfowl Population Status (2025) |
-| Wild turkeys | NWTF (2016) |
-| Wild boar / feral swine | ENETWILD (2025); USDA APHIS |
-| Minimum viable population | Traill, Bradshaw & Brook (2007): 4,169 |
-| Footprint | Poore & Nemecek (2018) |
-
-Model corrections after audit: world prices are measured against a world
-without today's abstainers; hens and dairy cows count whole lifetimes (with
-world yields for world-scope layers), plus male chicks and calves; early
-culls of breeding animals count as extra slaughter that unwinds; "fewer in
-barns" waits for gestation; wild catch is quota-bound, so only the farmed
-share of seafood responds, and the feed fish behind it are counted; less
-dairy means more beef cattle (~20% of beef is dairy-herd); the footprint is
-net of protein-matched tofu; supply responses carry a ±0.1 range; the herd
-outlook, projections and ledgers size the market by world population (UN WPP 2024
-medium variant: peak ~10.3 bn in the 2080s; `Population.kt`) times per-capita
-intake growing ~0.2%/yr (OECD-FAO), and offers flat, 1% and 3%
-abstainer scenarios instead of an extinction date. Not counted, and said so
-in the app: trade, subsidies, herd cycles, bycatch, crop deaths, wild-animal
-effects of land use, and differences in capacity to suffer.
-
-Still unsourced, and labelled so in the app: world tofu output (no
-authoritative figure; 2–5 Mt industry range), global vegan/vegetarian
-headcount, abstainer growth (Gallup shows the US share flat), fish and
-shellfish elasticities, producer margins, small-farm margin.
-
-## Worker
-
-`worker/` is a Cloudflare Worker at `meatpiety.hereliesaz.workers.dev`,
-caching each answer for a day:
-
-- `/market` — BLS average retail prices (USD).
-- `/fx` — USD exchange rate (open.er-api.com).
-- `/followers?platform=&handle=` — Bluesky and Mastodon via their public
-  APIs, YouTube via the Data API (`YOUTUBE_KEY` secret), TikTok, Instagram
-  and Facebook by reading public profile pages. Scraped platforms can block
-  the worker or hide counts; the app then leaves that account out. X is not
-  supported.
-
-Pushes to `main` touching `worker/` deploy it through `cloudflare-worker-deploy`
-in `HereLiesAz/workflows` (trigger contract `.github/workflows/worker-deploy.yml`).
-Locally:
-
-~~~
-cd worker && npm test
-~~~
+| [docs/MODEL.md](docs/MODEL.md) | How every number is calculated: layers, baselines, the market chain, herd outlook, footprint, soy, influence, notifications, what isn't counted |
+| [docs/SOURCES.md](docs/SOURCES.md) | Every input with its value, source and confidence; what is still unsourced |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, files, platform code, data flow, screen order, PWA, tests |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Building, releasing, deploying the worker, secrets, notifications |
+| [worker/README.md](worker/README.md) | Worker endpoints, platforms, BLS series |
+| [docs/PLAY_LISTING.md](docs/PLAY_LISTING.md) | Google Play listing copy |
+| [PRIVACY.md](PRIVACY.md) | Privacy policy |
 
 ## Modules
 
@@ -165,9 +89,11 @@ The manifest declares both `android:icon` and `android:roundIcon`.
 
 ## Running the web build
 
-```
+~~~
 ./gradlew :shared:wasmJsBrowserDevelopmentRun
-```
+~~~
+
+The web build is an installable PWA; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#pwa).
 
 ## Tests
 

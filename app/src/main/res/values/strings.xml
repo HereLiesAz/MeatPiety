@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Meat Piety</string>
+    <string name="widget_ledger_description">Fewer animals slaughtered, and your day count</string>
+    <string name="widget_never_born_description">Animals never born, litters, and the top species</string>
+    <string name="widget_next_animal_description">Progress to your next whole animal never bred</string>
+    <string name="widget_footprint_description">Emissions, land and water spared, net</string>
+    <string name="widget_outlived_description">Farm lifetimes your span has outlived</string>
 </resources>

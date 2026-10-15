@@ -19,5 +19,60 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".widget.LedgerWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_ledger_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_ledger" />
+        </receiver>
+        <receiver
+            android:name=".widget.NeverBornWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_never_born_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_never_born" />
+        </receiver>
+        <receiver
+            android:name=".widget.NextAnimalWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_next_animal_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_animal" />
+        </receiver>
+        <receiver
+            android:name=".widget.FootprintWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_footprint_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_footprint" />
+        </receiver>
+        <receiver
+            android:name=".widget.OutlivedWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_outlived_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_outlived" />
+        </receiver>
     </application>
 </manifest>
