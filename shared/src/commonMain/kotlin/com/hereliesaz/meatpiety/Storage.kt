@@ -20,6 +20,15 @@ internal object StartDate {
 
     fun epochDay(): Long? = Storage.get(KEY)?.toLongOrNull()
 
+    /** Days in the default ledger when the user never picks a start date. */
+    const val DEFAULT_DAYS = 365
+
+    /**
+     * The stored start day, or a default of [DEFAULT_DAYS] ago that is persisted
+     * on first use so background work and widgets see the same ledger as the app.
+     */
+    fun epochDayOrDefault(): Long = epochDay() ?: (todayEpochDay() - DEFAULT_DAYS).also(::setEpochDay)
+
     fun setEpochDay(day: Long) = Storage.set(KEY, day.toString())
 
     /** "12 Mar 2024" for an epoch day (proleptic Gregorian, UTC). */
