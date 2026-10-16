@@ -50,11 +50,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // The country decides /fx's default currency, so it is part of the cache key.
-    const cacheKey = new Request(
-      url.pathname === "/fx" && !url.searchParams.get("currency")
-        ? `${url.origin}/fx?country=${request.cf?.country ?? "US"}`
-        : url.toString(),
-    );
+    const cacheKey = new Request(cacheKeyFor(url, request.cf?.country));
     const cache = caches.default;
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
@@ -69,6 +65,21 @@ export default {
     return response;
   },
 };
+
+const PARAMS = { "/market": [], "/fx": ["currency"], "/followers": ["platform", "handle"] };
+
+/** Canonical cache key: only the params a route reads, so extra query params can't bypass the cache. */
+export function cacheKeyFor(url, country) {
+  const known = PARAMS[url.pathname];
+  if (!known) return `${url.origin}${url.pathname}`;
+  if (url.pathname === "/fx" && !url.searchParams.get("currency")) {
+    return `${url.origin}/fx?country=${country ?? "US"}`;
+  }
+  const q = new URLSearchParams();
+  for (const k of known) if (url.searchParams.has(k)) q.set(k, url.searchParams.get(k));
+  const qs = q.toString();
+  return `${url.origin}${url.pathname}${qs ? `?${qs}` : ""}`;
+}
 
 async function route(url, request, env) {
   switch (url.pathname) {
@@ -127,8 +138,23 @@ export function cleanHandle(raw) {
 export function parseCount(text) {
   const m = /^([\d.,]+)\s*([KkMmBb]?)$/.exec(text.trim());
   if (!m) return null;
-  const n = parseFloat(m[2] ? m[1].replace(/,/g, "") : m[1].replace(/[.,]/g, ""));
-  return Math.round(n * ({ k: 1e3, m: 1e6, b: 1e9 }[m[2].toLowerCase()] ?? 1));
+  const [, digits, suffix] = m;
+  let n;
+  if (/^\d{1,3}([.,]\d{3})+$/.test(digits)) {
+    n = parseFloat(digits.replace(/[.,]/g, "")); // thousands separators
+  } else if (/^\d+([.,]\d+)?$/.test(digits)) {
+    n = parseFloat(digits.replace(",", ".")); // decimal point or decimal comma
+  } else if (/^\d{1,3}(,\d{3})+\.\d+$/.test(digits)) {
+    n = parseFloat(digits.replace(/,/g, ""));
+  } else {
+    return null;
+  }
+  return Math.round(n * ({ k: 1e3, m: 1e6, b: 1e9 }[suffix.toLowerCase()] ?? 1));
+}
+
+/** A dotted public DNS name: alphabetic TLD (so no IPs or hex/numeric forms), not a local suffix. */
+export function isPublicHost(host) {
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(host) && !/\.(internal|local|localhost|lan|home|corp|test|invalid)$/i.test(host);
 }
 
 const SAFE = /^[A-Za-z0-9._-]{1,100}$/;
@@ -147,7 +173,7 @@ async function followers(platform, raw, env) {
     case "mastodon": {
       // @name@instance. The instance is user-supplied, so only public DNS names are fetched.
       const [name, host] = handle.split("@");
-      if (!SAFE.test(name ?? "") || !/^(?!\d+\.\d+\.\d+\.\d+$)[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(host ?? "")) {
+      if (!SAFE.test(name ?? "") || !isPublicHost(host ?? "")) {
         throw new Fail("use @name@instance", 400);
       }
       const res = await fetch(`https://${host}/api/v1/accounts/lookup?acct=${encodeURIComponent(name)}`);
