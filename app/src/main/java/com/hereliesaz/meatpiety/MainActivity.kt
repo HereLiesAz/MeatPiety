@@ -13,7 +13,8 @@ import com.hereliesaz.meatpiety.widget.updateAllWidgets
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    // Milestones crossed before permission is granted fire the next time the ledger changes.
+    // Milestones crossed while the app is closed and permission is missing stay unseen,
+    // so the next background check after it is granted delivers them.
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
