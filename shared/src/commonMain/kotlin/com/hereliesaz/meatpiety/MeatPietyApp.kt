@@ -93,7 +93,7 @@ private fun Modifier.column() = widthIn(max = MaxColumn).fillMaxWidth().padding(
 
 @Composable
 private fun LedgerScreen() {
-    var startDay by remember { mutableStateOf(StartDate.epochDay() ?: (todayEpochDay() - 365)) }
+    var startDay by remember { mutableStateOf(StartDate.epochDayOrDefault()) }
     var picking by remember { mutableStateOf(false) }
     var diet by remember { mutableStateOf(Storage.get("diet")?.let { d -> Diet.entries.firstOrNull { it.name == d } } ?: Diet.VEGAN) }
     val handles = remember { mutableStateMapOf<Platform, String>() }

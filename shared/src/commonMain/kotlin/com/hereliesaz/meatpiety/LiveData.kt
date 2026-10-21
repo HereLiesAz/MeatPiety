@@ -22,6 +22,10 @@ internal const val WORKER_URL = "https://meatpiety.hereliesaz.workers.dev"
 internal object LiveData {
     private val client by lazy { HttpClient() }
 
+    /** Like [getJson], but a worker error body (e.g. BLS quota exhausted) degrades to null too. */
+    private suspend fun getJsonOrNull(path: String, vararg params: Pair<String, String>): JsonObject? =
+        try { getJson(path, *params) } catch (e: LookupError) { null }
+
     private suspend fun getJson(path: String, vararg params: Pair<String, String>): JsonObject? = runCatching {
         val response = client.get(WORKER_URL + path) { params.forEach { (k, v) -> parameter(k, v) } }
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
@@ -32,14 +36,14 @@ internal object LiveData {
 
     /** Live U.S. retail prices in USD per species unit, keyed by [Species.name]. */
     suspend fun prices(): Map<String, Double> =
-        getJson("/market")?.get("prices")?.jsonObject
+        getJsonOrNull("/market")?.get("prices")?.jsonObject
             ?.mapNotNull { (k, v) -> v.jsonPrimitive.doubleOrNull?.let { k to it } }?.toMap()
             ?: emptyMap()
 
     /** Exchange rate into the device's currency, or the visitor's country's currency when unknown. */
     suspend fun money(): Money? {
         val code = deviceCurrencyCode()
-        val body = if (code != null) getJson("/fx", "currency" to code) else getJson("/fx")
+        val body = if (code != null) getJsonOrNull("/fx", "currency" to code) else getJsonOrNull("/fx")
         val currency = body?.get("currency")?.jsonPrimitive?.content ?: return null
         val rate = body["perUsd"]?.jsonPrimitive?.doubleOrNull ?: return null
         return Money(currency, rate)

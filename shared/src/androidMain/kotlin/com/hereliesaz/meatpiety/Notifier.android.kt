@@ -66,10 +66,11 @@ actual object Notifier {
         val seen = prefs.getStringSet(SEEN, emptySet()).orEmpty()
         val fresh = milestones(days, personal, influence, worldLayer(days), money).filterNot { it.id in seen }
         if (fresh.isEmpty()) return
-        prefs.edit().putStringSet(SEEN, seen + fresh.map { it.id }).apply()
+        // Without permission nothing is shown, so leave these unseen for when it's granted.
         if (Build.VERSION.SDK_INT >= 33 &&
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
+        prefs.edit().putStringSet(SEEN, seen + fresh.map { it.id }).apply()
         fresh.forEach { post(context, it, summary = false) }
         if (fresh.size > 1) post(context, fresh.first(), summary = true)
     }
