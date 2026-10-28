@@ -8,3 +8,4 @@ build/
 .cxx/
 .externalNativeBuild/
 kotlin-js-store/
+.hotswan/
