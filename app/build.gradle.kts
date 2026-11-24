@@ -18,7 +18,15 @@ val appVersionName = (findProperty("versionName") ?: versionProps.getProperty("v
 // Upload key arrives from CI as KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD.
 val keystoreFile = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 
+// Only Play builds carry the proprietary Play update adapter.
+val playUpdates = providers.gradleProperty("azPlayUpdates").map { it.toBooleanStrict() }
+    .orElse(providers.gradleProperty("releaseVersionCode").map { true }).orElse(false)
+
 android {
+    sourceSets.getByName("main").kotlin.srcDir(
+        if (playUpdates.get()) "src/playUpdates/kotlin" else "src/githubUpdates/kotlin"
+    )
+
     namespace = "com.hereliesaz.meatpiety"
     compileSdk = 37
 
@@ -62,6 +70,8 @@ android {
 }
 
 dependencies {
+    implementation("com.github.HereLiesAz.AzNavRail:aznavrail-updates:12.5")
+    if (playUpdates.get()) implementation("com.github.HereLiesAz.AzNavRail:aznavrail-updates-play:12.5")
     implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.glance:glance-appwidget:1.2.0")

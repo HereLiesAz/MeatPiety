@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent { MeatPietyApp() }
+        checkAppUpdate(this)
     }
 
     override fun onStop() {
