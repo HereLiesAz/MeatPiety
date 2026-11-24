@@ -1,6 +1,6 @@
 # Privacy Policy — Meat Piety
 
-Effective 11 October 2026. Applies to the Meat Piety Android app
+Effective 23 November 2026. Applies to the Meat Piety Android app
 (`com.hereliesaz.meatpiety`) and the Meat Piety web app.
 
 Meat Piety has no accounts, no ads, no analytics and no tracking. It does not
@@ -46,6 +46,8 @@ run on Cloudflare) for three things:
 - **Cloudflare:** like any web service, it processes your IP address to
   deliver the response. Meat Piety does not log it or keep it.
 
+Android release builds also check GitHub release metadata or Google Play update availability. These requests send no diet, start date, milestones, handles or other app data. GitHub receives the ordinary connection IP address when serving release metadata.
+
 ## Notifications
 
 Milestone notifications are created on your device: by Android's background
@@ -55,7 +57,7 @@ browser settings.
 
 ## Permissions (Android)
 
-- **Internet:** to fetch prices, exchange rates and follower counts.
+- **Internet:** to fetch prices, exchange rates, follower counts and update metadata.
 - **Notifications:** to tell you about milestones while you're away. This is
   optional.
 

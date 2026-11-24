@@ -117,3 +117,7 @@ in `.github/workflows/` and the controller replaces them with trackers. CI passe
 
 `.version-state.json` is written by the central controller (`HereLiesAz/workflows`
 version contract sync); it records the last synced version and is not edited by hand.
+
+## Android updates
+
+Release builds check the installed distribution through AzNavRail 12.5. The GitHub APK contains no Play update SDK; local Play bundles can opt in with `-PazPlayUpdates=true`. Web builds are unchanged.
