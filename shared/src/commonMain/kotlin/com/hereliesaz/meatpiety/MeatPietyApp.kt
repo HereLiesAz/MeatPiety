@@ -315,7 +315,8 @@ private fun LedgerScreen() {
                         "Trade and regional prices (one world market stands in), subsidies and price supports, herd cycles " +
                             "and cold storage (one lag stands in), wild-catch bycatch and discards, animals killed in crop " +
                             "farming, what spared land does for wild animals, and how much each animal can suffer: a shrimp " +
-                            "and a cow each count as one. Every figure is a central estimate from the sources in the README.",
+                            "and a cow each count as one. But that\u0027s fair, because you don\u0027t save lives by the pound. " +
+                            "Every figure is a central estimate from the sources in the README.",
                         style = MaterialTheme.typography.bodySmall, color = Piety.Lichen,
                     )
                 }

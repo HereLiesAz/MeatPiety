@@ -75,4 +75,9 @@ dependencies {
     implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.glance:glance-appwidget:1.2.0")
+    constraints {
+        implementation("androidx.fragment:fragment:1.9.1") {
+            because("Google Play flags transitive Fragment 1.0.0 as outdated; use the supported stable version without adding an unused direct dependency")
+        }
+    }
 }
